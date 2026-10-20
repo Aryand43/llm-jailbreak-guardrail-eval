@@ -1,0 +1,57 @@
+# Benchmark registry for the aggregate. One loader per key in harmfloor/data/.
+#
+# status: todo -> sourced (raw files + license recorded) -> loaded (emits schema.Item) -> validated
+# redistribute: whether our released aggregate may include the text, or only IDs + a loader.
+# Everything marked TBC is for Aniket to confirm from the paper, repo or authors (docs/TASKS.md A1).
+
+core:  # the four papers the revision is built on
+  jailbreakradar:
+    paper: "Chu et al., JailbreakRadar, ACL 2025 (aclanthology 2025.acl-long.1045)"
+    provides: "160 forbidden questions x 16 violation categories; 17 attacks in 6 families"
+    role: [attack_family_axis, prompts]
+    url: TBC  # code/data link not on the ACL page; check the arXiv 2402.05668 appendix or ask the authors
+    license: TBC
+    redistribute: TBC
+    status: todo
+  sok_guardrails:
+    paper: "Wang et al., SoK: Evaluating Jailbreak Guardrails for LLMs (arXiv 2506.10597)"
+    provides: "guardrail taxonomy (6 dims), 13 guardrail configs, SEU metrics, attack prompts"
+    role: [defense_axis, prompts, utility]
+    url: https://github.com/xunguangwang/SoK4JailbreakGuardrails
+    license: TBC
+    redistribute: TBC
+    status: todo
+  safedialbench:
+    paper: "Cao et al., SafeDialBench (arXiv 2502.11090)"
+    provides: "4,053 EN/ZH dialogues, 3-10 turns, 6 safety dims, 7 attack strategies"
+    role: [multi_turn, prompts]
+    url: https://safedialbench.github.io/
+    license: TBC
+    redistribute: TBC
+    note: "Use English split for the main grid. Re-judge with our judge; do not reuse their 1-10 scores."
+    status: todo
+  multibreak:
+    paper: "Song et al., MultiBreak (arXiv 2605.01687, ICML 2026)"
+    provides: "10,389 multi-turn prompts, 2,665 intents, 2-6 turns, 7 attack categories, 26 safety categories"
+    role: [multi_turn, prompts]
+    url: TBC  # no release link on arXiv as of 2026-10-20
+    license: TBC
+    redistribute: TBC
+    status: todo
+
+prompts:  # additional sources pulled in through SoK / standard practice
+  jbb_behaviors: {provides: "100 harmful behaviors + attack artifacts (PAIR, GCG, ...)", url: TBC, license: TBC, status: todo}
+  jailbreakhub_ijp: {provides: "in-the-wild jailbreak prompts (SoK samples 1,000)", url: TBC, license: TBC, status: todo}
+  harmbench: {provides: "harmful behaviors + precomputed test cases", url: TBC, license: TBC, status: todo}
+  strongreject: {provides: "forbidden prompts + rubric judge", url: TBC, license: TBC, status: todo}
+  multijail: {provides: "low-resource-language prompts (obfuscation family)", url: TBC, license: TBC, status: todo}
+  safemtdata: {provides: "multi-turn ActorAttack queries (SoK uses 600)", url: TBC, license: TBC, status: todo}
+  mhj: {provides: "multi-turn human jailbreaks (537)", url: TBC, license: TBC, status: todo}
+  cosafe: {provides: "multi-turn coreference attacks (1,400)", url: TBC, license: TBC, status: todo}
+  pku_saferlhf: {provides: "NeurIPS continuity (unsafe subset)", url: TBC, license: TBC, status: todo}
+  neurips_curated_cyber: {provides: "our 40 curated prompts", url: local, license: ours, status: todo}
+
+utility:  # benign prompts for the false-positive-rate constraint
+  or_bench: {provides: "over-refusal prompts (SoK samples 1,000)", url: TBC, license: TBC, status: todo}
+  xstest: {provides: "250 safe prompts that look unsafe", url: TBC, license: TBC, status: todo}
+  alpacaeval: {provides: "805 normal instructions", url: TBC, license: TBC, status: todo}
