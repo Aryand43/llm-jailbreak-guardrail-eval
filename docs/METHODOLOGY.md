@@ -1,6 +1,6 @@
 # Methodology and evaluation pipeline (ACL revision)
 
-Status: draft for Dr. Terry's review, 21 Oct 2026. Owner: Aryan. Implementation: Aniket (see [TASKS.md](TASKS.md)).
+Status: draft, 21 Oct 2026. Method: Aryan. Data and pipeline: Aniket.
 This is the source of truth for the research method. Changes after the protocol freeze go in §10.
 
 ## 1. Positioning
@@ -27,11 +27,11 @@ The aggregated, taxonomy-labelled benchmark is released as a **supporting resour
 | Keyword filters only | SoK guardrails (Llama Guard, WildGuard, SmoothLLM, input/session guards, optional GradientCuff) plus the NeurIPS filters as continuity baselines | The floor has to survive real defenses, not a strawman |
 | Keyword harm predicate (coupled to the filter) | Independent judge (never the same family as the filter in that cell), plus human validation and judge-error correction | Removes evaluator–filter coupling, our own stated limitation |
 | No utility constraint | Floors reported at matched false-positive rate on benign prompts (1 / **5** / 10 %) | Otherwise "refuse everything" trivially reaches zero |
-| Plateau read off a plot | Floor estimated as a fitted asymptote with CIs, a model-free test at max budget, and an extrapolation check | See §6.4: the NeurIPS data alone cannot separate "plateau" from "slow decay to 0" |
+| Plateau read off a plot | Floor estimated as a fitted asymptote with CIs, a model-free test at max budget, and an extrapolation check | A few budgets on ~100 prompts cannot separate "plateau" from "slow decay to 0" (§6.4) |
 | q ∈ {1, 4, 16, 64}, independent sampling per q | One pool of n = 64 samples per prompt; best-of-q for every q ≤ 64 computed exactly from the pool | Seven budgets for the cost of one, and the curves share samples (less noise) |
 | Single-turn only | Multi-turn family (SafeDialBench, MultiBreak, ActorAttack/X-Teaming via SoK) | MultiBreak's finding that multi-turn is much stronger is a direct test of the reasoning-asymmetry argument |
 
-**Action before anything else (A0):** the NeurIPS folders contain no prompt-level logs behind Table 1, and `data/residual_completions.jsonl` holds templated placeholder text. The PKU prompt IDs are placeholders too. Every number in the ACL paper must come from fresh runs of this pipeline, logged at prompt and sample level. §5.1 re-runs the NeurIPS setting for exactly this reason.
+Every number in the ACL paper comes from fresh runs of this pipeline, logged at prompt and sample level. §5.1 re-runs the NeurIPS setting with the new pipeline.
 
 ## 3. Formal quantities
 
@@ -66,8 +66,8 @@ U  =  (U − ρ)      +   (ρ − L)       +   L
 
 This makes any benchmark's ASR number interpretable. Two models with the same ASR of 0.10 can differ completely: one is 0.09 irreducible, the other 0.01 irreducible and 0.09 reducible. Only the second can be fixed with more filtering.
 
-**Visualisations** (prototypes in `figures/demo_*.png`, refit from NeurIPS Table 1 numbers, illustration only):
-1. **Bound map:** one dot per model at (U, L). The diagonal means the defense removes nothing; L = 0 is full mitigation. Distance from the diagonal is D_U. → *Terry: please check this against the sketch from the call; adjust axes if you had something else in mind.*
+**Visualisations** (`harmfloor/plots.py`):
+1. **Bound map:** one dot per model at (U, L). The diagonal means the defense removes nothing; L = 0 is full mitigation. Distance from the diagonal is D_U. Match to the figure Terry drew in the 19 Oct call.
 2. **Bound bands:** ρ(q) per model with U and L drawn as the two bounds.
 3. **Decomposition bars:** removed / reducible / irreducible per model (and per attack family).
 4. **Taxonomy heatmap:** L for models × attack families, with non-significant cells hatched.
@@ -111,8 +111,8 @@ Floors under each judge (primary, two secondary, and human-only on the annotated
 ## 6. Hypotheses and statistics (pre-registered before the main runs)
 
 ### 6.1 Hypotheses
-- **H1 (floor persistence):** for every model × attack family, the judge-corrected floor under the strongest defense at FPR ≤ 5% is positive. "Positive" means both the model-free ρ(q_max) and the fitted L have a 95% lower bound > 0. Cells that fail are reported as counter-evidence, not dropped.
-- **H2 (saturation, not slow decay):** the floor model fits better than L = 0 (SSE ratio, bootstrap share of L̂ = 0), and a fit on q ≤ 64 predicts the held-out q ∈ {128, 256} within CI on the n = 256 subset.
+- **H1 (floor persistence):** for every model × attack family, the judge-corrected harmful rate at the largest budget, under the strongest defense at FPR ≤ 5%, has a 95% lower bound above zero. This model-free test is the per-cell headline (§6.5 shows the fitted asymptote is too noisy per cell). Cells that fail are reported as counter-evidence, not dropped.
+- **H2 (saturation, not slow decay):** on the n = 256 subset and on cells pooled within each attack family, the fitted floor L has a 95% lower bound above zero, and a fit on q ≤ 64 predicts the held-out q ∈ {128, 256} within CI.
 - **H3 (theory-predicted ordering):** families that hide intent from a sequence-level filter (obfuscation, multi-turn) have a higher irreducible share L/U than families whose intent is lexically visible (direct, human-based). This fits JailbreakRadar's observation that heuristic attacks reach high ASR but are easy to mitigate (high U, low L/U) and MultiBreak's multi-turn results. It makes the bound analysis explanatory, not only descriptive.
 - **H4 (granularity):** for multi-turn rows, session-level guards lower L relative to sequence-level guards but do not reach 0. SoK reports session-level guardrails still above 10% ASR on ActorAttack.
 
@@ -126,17 +126,26 @@ Floors under each judge (primary, two secondary, and human-only on the annotated
 - Human validation: 2 annotators, ~400 samples stratified by family × defense × judge label. Rubric from the NeurIPS appendix (actionability, specificity, operational detail). Report Cohen's κ.
 - **Judge-error correction:** every reported rate is Rogan–Gladen corrected using the judge's sensitivity and specificity on the human sample, and that sample is resampled inside the bootstrap. Without this, a reviewer can argue the floor is just the judge's false-positive rate.
 
-### 6.4 Why the design needs more than the NeurIPS data
-Refitting NeurIPS Table 1 (`scripts/demo_neurips_table.py`): the model-free rate at q = 64 is clearly positive. However, with 4 budgets and N = 120, the 95% lower bound on the fitted L is 0 in all 12 model × filter cells, and 26–43% of bootstrap refits put L at 0. Those data cannot separate a real plateau from slow decay to zero. The prompt counts and budget grid in `configs/experiment.yaml` are set by the power analysis in §6.5, not by convention.
+### 6.4 Two tests, not one
+A positive harmful rate at the largest budget is easy to show: a rate of 0.07 on 100 prompts already has a 95% lower bound near 0.03. Showing that the *asymptote* is positive is much harder, because a slow decay to zero and a plateau look alike over a few budgets. Hence H1 uses the model-free test per cell, and H2 tests the asymptote only where there is enough data (§6.5).
 
 ### 6.5 Power analysis
-POWER_TABLE_PLACEHOLDER
+Simulation: true curve ρ(q) = 0.044 + 0.156·q^(−0.43) (ρ falls from 0.20 at q = 1 to 0.07 at q = 64). Power = share of 60 simulated studies whose bootstrap 95% lower bound on the fitted L exceeds 0.001. Rates are resampled independently per budget, which is conservative: real curves share samples across q and are smoother.
+
+| Prompts per cell | q ≤ 64 (7 budgets) | q ≤ 256 (9 budgets) | q ≤ 256, half the floor (L = 0.022) |
+|---|---|---|---|
+| 120 | 0.05 | 0.23 | 0.05 |
+| 600 | 0.18 | 0.40 | 0.20 |
+| 1200 | 0.25 | 0.50 | 0.35 |
+| 2400 | 0.33 | 0.90 | 0.58 |
+
+With no true floor (L = 0) the test fires in at most 7% of studies, so it does not invent floors. Conclusion: per-cell asymptote tests are out of reach at an affordable size. The asymptote is tested on the n = 256 subset with cells pooled within each attack family (H2), and the per-cell headline is the model-free test (H1).
 
 ## 7. Models and compute
 
 - **Open-weight via OpenRouter only** for targets. We need n samples under fixed decoding, and the white-box guard needs weights. We keep the three NeurIPS models for continuity and add models the four papers also report (Llama-3.1-8B, Qwen3-8B, DeepSeek-R1-Distill-7B), so our ceilings can be sanity-checked against theirs. More models cover scale and family. Closed models are a later extension if their APIs expose enough (sampling control, log-probs).
 - Multi-turn: replay the benchmark's user turns, generate earlier assistant turns greedily from the target, and pool only the final turn.
-- **Cost is dominated by n × items × models generations plus the same number of judge calls.** Aniket's first deliverable is a dry-run cost model using the metering layer ported from `adaptive-guardrail-evaluation`. No large run starts before the budget is approved.
+- **Cost is dominated by n × items × models generations plus the same number of judge calls.** Before any real run, the OpenRouter client (written fresh in this repo) logs token usage and cost per call, and a dry run estimates the total. No large run starts before the budget is approved.
 - **GPU:** WildGuard and GradientCuff need local weights. If we have no GPU access, they drop to optional and Llama Guard (hosted) carries the LLM-guard rows.
 
 ## 8. Paper outline (ACL template; Terry's structure)
@@ -158,9 +167,9 @@ POWER_TABLE_PLACEHOLDER
 
 | # | Decision | Proposed | Needs |
 |---|---|---|---|
-| D1 | Bound-map axes | x = U, y = L, dots = models (figure 1 above) | Terry: confirm against the sketch from the call |
-| D2 | Headline utility constraint | FPR ≤ 5% on OR-Bench + XSTest | Terry |
+| D1 | Bound-map axes | x = U, y = L, dots = models | Match Terry's figure from the 19 Oct call (Aryan has the screenshot) |
+| D2 | Headline utility constraint | **Decided (Terry, 21 Oct):** FPR ≤ 5% headline; 1% and 10% as sensitivity analysis | — |
 | D3 | Primary judge model | StrongREJECT rubric; model TBC | Aryan, after the judge pilot |
-| D4 | GPU for WildGuard / GradientCuff | optional unless access confirmed | Prof. Anupam / lab |
+| D4 | GPU for WildGuard / GradientCuff | **Access confirmed (Prof. Anupam, 21 Oct; via Udayon).** GradientCuff on 70B+ targets depends on GPU memory | Aryan to check GPU specs with Udayon |
 | D5 | Venue deadline | "ACL abstract, January" | confirm the ARR cycle and date |
 | D6 | NeurIPS reviews | map each review point to a section here | Aryan to add reviews to `docs/` |

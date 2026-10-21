@@ -1,1 +1,34 @@
 # harmfloor
+
+Bound-based evaluation of residual jailbreak harm across attack taxonomies, benchmarks and guardrails (ACL revision of *On the Limits of Support-Preserving Alignment and Bounded Filtering*).
+
+Start with [docs/METHODOLOGY.md](docs/METHODOLOGY.md).
+
+## Setup
+
+Requires [uv](https://docs.astral.sh/uv/).
+
+```bash
+uv sync
+uv run pytest
+```
+
+## Layout
+
+| Path | What it is |
+|---|---|
+| `docs/METHODOLOGY.md` | Research method: bounds, hypotheses, experiments, open decisions |
+| `configs/taxonomy.yaml` | Unified attack families and harm domains, with crosswalks from each benchmark |
+| `configs/benchmarks.yaml` | Dataset registry: source, licence, status |
+| `configs/experiment.yaml` | Models, budgets, defenses, judges |
+| `harmfloor/schema.py` | Record format every loader and run emits |
+| `harmfloor/taxonomy.py` | Label mapping; loaders must map labels through this |
+| `harmfloor/bounds.py` | Ceiling, floor and bound decomposition estimators |
+| `harmfloor/plots.py` | Paper figures |
+| `harmfloor/data/` | Benchmark loaders (one module per source) |
+
+## Rules
+
+- Never commit API keys. Put `OPENROUTER_API_KEY` in `.env` (gitignored).
+- Raw datasets go in `data/raw/<source>/` (gitignored); record the source and licence in `configs/benchmarks.yaml`.
+- Map labels only through `harmfloor/taxonomy.py`. If a label has no mapping, add it to `configs/taxonomy.yaml` with `review: true`.

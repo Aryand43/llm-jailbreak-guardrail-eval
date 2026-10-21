@@ -2,7 +2,7 @@
 #
 # status: todo -> sourced (raw files + license recorded) -> loaded (emits schema.Item) -> validated
 # redistribute: whether our released aggregate may include the text, or only IDs + a loader.
-# Everything marked TBC is for Aniket to confirm from the paper, repo or authors (docs/TASKS.md A1).
+# Everything marked TBC is to be confirmed from the paper, its repo, or the authors.
 
 core:  # the four papers the revision is built on
   jailbreakradar:

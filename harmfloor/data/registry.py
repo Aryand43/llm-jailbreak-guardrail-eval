@@ -1,10 +1,10 @@
-"""Loader registry. Aniket: add one module per benchmark and register it here (docs/TASKS.md A2).
+"""Loader registry: one module per benchmark, registered here.
 
 A loader reads the raw files that A1 recorded under data/raw/<source>/ and yields Items. It must:
   - set item_id = f"{source}:{source_id}" and record source_version (revision or sha256);
   - keep every native label verbatim in native_labels;
   - map labels with harmfloor.taxonomy (never hard-code a family or domain in the loader);
-  - leave intent_id empty-equal to item_id; cross-benchmark dedupe assigns the shared clusters.
+  - set intent_id = item_id; cross-benchmark dedupe assigns the shared clusters later.
 """
 
 from __future__ import annotations

@@ -2,7 +2,7 @@
 
 models:  # open-weight via OpenRouter (we need n samples, fixed decoding and, for white-box, weights)
   # Slugs are candidates: Aniket confirms each is served, honours temperature/top_p/seed, and pins
-  # the upstream provider (docs/TASKS.md A5).
+  # the upstream provider.
   neurips_continuity:
     - meta-llama/llama-3.2-3b-instruct
     - nvidia/llama-3.1-nemotron-70b-instruct
@@ -43,7 +43,7 @@ defenses:
   bestofq_llamaguard:
     {stage: post, paradigm: llm, granularity: sequence, access: black_box, theory_class: black_box, knob: candidates_scored, scorer: llama_guard_3}
   bestofq_wildguard:
-    {stage: post, paradigm: llm, granularity: sequence, access: black_box, theory_class: black_box, knob: candidates_scored, scorer: wildguard, needs_gpu: true}
+    {stage: post, paradigm: llm, granularity: sequence, access: black_box, theory_class: black_box, knob: candidates_scored, scorer: wildguard, needs_gpu: true}  # lab GPU via Udayon
   bestofq_keyword:  # the NeurIPS black-box filter, kept as the continuity baseline
     {stage: post, paradigm: rule, granularity: sequence, access: black_box, theory_class: black_box, knob: candidates_scored, scorer: keyword}
   sq_threshold:     # the NeurIPS SQ filter with a real scorer
