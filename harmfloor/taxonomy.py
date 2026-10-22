@@ -12,6 +12,7 @@ import yaml
 from harmfloor.schema import AttackFamily
 
 TAXONOMY_PATH = Path(__file__).resolve().parents[1] / "configs" / "taxonomy.yaml"
+BENCHMARKS_PATH = TAXONOMY_PATH.with_name("benchmarks.yaml")
 
 
 @dataclass(frozen=True)
@@ -60,10 +61,33 @@ def harm_domain(source: str, label: str) -> Mapping | None:
         raise KeyError(f"no harm-domain mapping for {source}:{label!r}") from None
 
 
-def validate(tax: dict[str, Any] | None = None) -> list[str]:
-    """Every crosswalk target must be a declared family / domain. Returns a list of problems."""
-    tax = tax or load()
+def validate(
+    tax: dict[str, Any] | None = None,
+    benchmarks: dict[str, Any] | None = None,
+) -> list[str]:
+    """Check source keys against the registry and family/domain targets against the taxonomy.
+
+    Registered benchmarks may lack crosswalks while their loaders are still pending.
+    Returns a list of problems.
+    """
+    if tax is None:
+        tax = load()
+    if benchmarks is None:
+        with BENCHMARKS_PATH.open(encoding="utf-8") as f:
+            benchmarks = yaml.safe_load(f)
     problems = []
+    registered_sources = {source for entries in benchmarks.values() for source in entries}
+    source_references = [
+        ("attack_crosswalk", set(tax["attack_crosswalk"]) - {"direct_sources"}),
+        ("attack_crosswalk.direct_sources", tax["attack_crosswalk"]["direct_sources"]),
+        ("strategy_crosswalk", tax["strategy_crosswalk"]),
+        ("harm_crosswalk", set(tax["harm_crosswalk"]) - {"excluded"}),
+        ("harm_crosswalk.excluded", tax["harm_crosswalk"]["excluded"]),
+    ]
+    for path, sources in source_references:
+        for source in sorted(sources):
+            if source not in registered_sources:
+                problems.append(f"{path}.{source}: source not registered in configs/benchmarks.yaml")
     families, domains = set(tax["attack_families"]), set(tax["harm_domains"])
     if families != set(get_args(AttackFamily)):
         problems.append(f"attack_families {sorted(families)} != schema.AttackFamily")

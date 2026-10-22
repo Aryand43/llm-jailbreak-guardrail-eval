@@ -62,9 +62,9 @@ attack_crosswalk:
     MultiJail: obfuscation_based  # low-resource-language translation
     ActorAttack: multi_turn
     X-Teaming: multi_turn
-  neurips_legacy:
+  neurips_curated_cyber:
     curated_cyber: human_based  # educational / role-play framing, hand-written
-  direct_sources: [jbb_behaviors, harmbench, strongreject, advbench, pku_saferlhf]
+  direct_sources: [jbb_behaviors, harmbench, strongreject, pku_saferlhf]
 
 # multi-turn strategies -> shared strategy tags (secondary axis inside `multi_turn`)
 strategy_crosswalk:

@@ -1,57 +1,236 @@
 # Benchmark registry for the aggregate. One loader per key in harmfloor/data/.
 #
 # status: todo -> sourced (raw files + license recorded) -> loaded (emits schema.Item) -> validated
-# redistribute: whether our released aggregate may include the text, or only IDs + a loader.
-# Everything marked TBC is to be confirmed from the paper, its repo, or the authors.
+# redistribute: conditional = text sharing supported subject to redistribution_note;
+# TBC = full-text redistribution is unresolved, not a finding that it is prohibited.
+# license records the publisher's declaration; license_scope distinguishes code/data.
+# evidence links support the recorded terms or identify the pages checked for missing terms.
+# Audit: 2026-10-22. No raw datasets acquired; status stays todo until sourcing is complete.
+# Pin source revisions when acquiring data. Do not apply one licence to the whole aggregate.
 
 core:  # the four papers the revision is built on
   jailbreakradar:
     paper: "Chu et al., JailbreakRadar, ACL 2025 (aclanthology 2025.acl-long.1045)"
     provides: "160 forbidden questions x 16 violation categories; 17 attacks in 6 families"
     role: [attack_family_axis, prompts]
-    url: TBC  # code/data link not on the ACL page; check the arXiv 2402.05668 appendix or ask the authors
+    url: https://github.com/TrustAIRLab/JailbreakRadar
+    data_url: https://github.com/TrustAIRLab/JailbreakRadar/tree/main/forbidden_questions
     license: TBC
     redistribute: TBC
+    redistribution_note: "No explicit dataset licence found in the checked repository/README. Ask maintainers about the forbidden questions and any redistributed attack artifacts."
+    evidence:
+      - https://github.com/TrustAIRLab/JailbreakRadar/blob/main/README.md
+      - https://github.com/TrustAIRLab/JailbreakRadar/tree/main/forbidden_questions
     status: todo
   sok_guardrails:
     paper: "Wang et al., SoK: Evaluating Jailbreak Guardrails for LLMs (arXiv 2506.10597)"
     provides: "guardrail taxonomy (6 dims), 13 guardrail configs, SEU metrics, attack prompts"
     role: [defense_axis, prompts, utility]
     url: https://github.com/xunguangwang/SoK4JailbreakGuardrails
-    license: TBC
+    data_url: https://huggingface.co/datasets/xunguangwang/JailbreakGuardrailBenchmark
+    license: MIT
+    license_scope: "Dataset card declaration; component datasets retain their own terms. No repository-wide code licence found in the checked GitHub root/README."
     redistribute: TBC
+    redistribution_note: "Do not treat the combined dataset as uniformly MIT. Resolve terms per component; notably the upstream AlpacaEval card declares CC-BY-NC-4.0."
+    evidence:
+      - https://huggingface.co/datasets/xunguangwang/JailbreakGuardrailBenchmark
+      - https://huggingface.co/datasets/tatsu-lab/alpaca_eval
+      - https://github.com/xunguangwang/SoK4JailbreakGuardrails
     status: todo
   safedialbench:
     paper: "Cao et al., SafeDialBench (arXiv 2502.11090)"
     provides: "4,053 EN/ZH dialogues, 3-10 turns, 6 safety dims, 7 attack strategies"
     role: [multi_turn, prompts]
     url: https://safedialbench.github.io/
-    license: TBC
-    redistribute: TBC
+    data_url: https://huggingface.co/datasets/HongyeCao/SafeDialBench
+    english_data_url: https://github.com/drivetosouth/SafeDialBench-Dataset/blob/main/data/complete/datasets_en.jsonl
+    license: Apache-2.0
+    license_scope: "Declared in the raw Hugging Face card only among the checked sources; no explicit dataset licence found in the GitHub root/README."
+    redistribute: conditional
+    redistribution_note: "For the Hugging Face dataset release, include the Apache-2.0 licence, retain applicable notices, mark modified files and preserve any supplied NOTICE attributions. Verify that any GitHub copy used matches the licensed release."
+    evidence:
+      - https://github.com/drivetosouth/SafeDialBench-Dataset
+      - https://huggingface.co/datasets/HongyeCao/SafeDialBench/tree/main
+      - https://huggingface.co/datasets/HongyeCao/SafeDialBench/raw/main/README.md
+      - https://www.apache.org/licenses/LICENSE-2.0
     note: "Use English split for the main grid. Re-judge with our judge; do not reuse their 1-10 scores."
     status: todo
   multibreak:
     paper: "Song et al., MultiBreak (arXiv 2605.01687, ICML 2026)"
     provides: "10,389 multi-turn prompts, 2,665 intents, 2-6 turns, 7 attack categories, 26 safety categories"
     role: [multi_turn, prompts]
-    url: TBC  # no release link on arXiv as of 2026-10-20
+    url: TBC
+    paper_url: https://arxiv.org/abs/2605.01687
     license: TBC
     redistribute: TBC
+    redistribution_note: "The author's homepage announces a Hugging Face dataset release in September 2026, but its news source links to '#' as a placeholder. No verified public release located in the checked pages or Hugging Face search as of 2026-10-22. Request the actual release URL and dataset terms; the paper's CC-BY-4.0 licence does not establish dataset permissions."
+    evidence:
+      - https://arxiv.org/html/2605.01687v1
+      - https://proceedings.mlr.press/v306/song26n.html
+      - https://jsong2333333.github.io/
+      - https://github.com/jsong2333333/jsong2333333.github.io/blob/main/_news/2026-09-multibreak-dataset.md
+      - https://huggingface.co/papers/2605.01687
     status: todo
 
 prompts:  # additional sources pulled in through SoK / standard practice
-  jbb_behaviors: {provides: "100 harmful behaviors + attack artifacts (PAIR, GCG, ...)", url: TBC, license: TBC, status: todo}
-  jailbreakhub_ijp: {provides: "in-the-wild jailbreak prompts (SoK samples 1,000)", url: TBC, license: TBC, status: todo}
-  harmbench: {provides: "harmful behaviors + precomputed test cases", url: TBC, license: TBC, status: todo}
-  strongreject: {provides: "forbidden prompts + rubric judge", url: TBC, license: TBC, status: todo}
-  multijail: {provides: "low-resource-language prompts (obfuscation family)", url: TBC, license: TBC, status: todo}
-  safemtdata: {provides: "multi-turn ActorAttack queries (SoK uses 600)", url: TBC, license: TBC, status: todo}
-  mhj: {provides: "multi-turn human jailbreaks (537)", url: TBC, license: TBC, status: todo}
-  cosafe: {provides: "multi-turn coreference attacks (1,400)", url: TBC, license: TBC, status: todo}
-  pku_saferlhf: {provides: "NeurIPS continuity (unsafe subset)", url: TBC, license: TBC, status: todo}
-  neurips_curated_cyber: {provides: "our 40 curated prompts", url: local, license: ours, status: todo}
+  jbb_behaviors:
+    provides: "100 harmful behaviors + attack artifacts (PAIR, GCG, ...)"
+    url: https://huggingface.co/datasets/JailbreakBench/JBB-Behaviors
+    artifacts_url: https://github.com/JailbreakBench/artifacts
+    license: MIT
+    license_scope: "Behavior dataset explicitly MIT; artifact repository separately declares each artifact MIT, owned by its authors."
+    redistribute: conditional
+    redistribution_note: "Retain the applicable copyright and MIT permission notices, including artifact authors' notices."
+    evidence:
+      - https://huggingface.co/datasets/JailbreakBench/JBB-Behaviors/blob/main/README.md
+      - https://github.com/JailbreakBench/jailbreakbench/blob/main/LICENSE
+      - https://github.com/JailbreakBench/artifacts/blob/main/README.md
+      - https://github.com/JailbreakBench/artifacts/blob/main/LICENSE
+    status: todo
+  jailbreakhub_ijp:
+    provides: "in-the-wild jailbreak prompts (SoK samples 1,000)"
+    url: https://huggingface.co/datasets/TrustAIRLab/in-the-wild-jailbreak-prompts
+    code_url: https://github.com/verazuo/jailbreak_llms
+    license: MIT
+    license_scope: "Dataset card and repository declare MIT; repository README also states research-only intent."
+    redistribute: TBC
+    redistribution_note: "MIT requires retaining copyright and permission notices. Clarify the README's research-only statement before approving unrestricted aggregate text release."
+    note: "Record the source snapshot and SoK sampling IDs; the dated upstream releases differ in size."
+    evidence:
+      - https://huggingface.co/datasets/TrustAIRLab/in-the-wild-jailbreak-prompts
+      - https://github.com/verazuo/jailbreak_llms/blob/main/README.md
+      - https://github.com/verazuo/jailbreak_llms/blob/main/LICENSE
+    status: todo
+  harmbench:
+    provides: "harmful behaviors + precomputed test cases"
+    url: https://github.com/centerforaisafety/HarmBench
+    data_url: https://github.com/centerforaisafety/HarmBench/blob/main/data/behavior_datasets/harmbench_behaviors_text_all.csv
+    license: MIT
+    license_scope: "Repository licence; separate coverage of all dataset content and externally distributed test cases is not established by the checked README."
+    redistribute: TBC
+    redistribution_note: "Preserve MIT notices for covered material. Confirm the selected data/test-case artifacts and any third-party content terms before approving full-text redistribution."
+    evidence:
+      - https://github.com/centerforaisafety/HarmBench/blob/main/LICENSE
+      - https://github.com/centerforaisafety/HarmBench/blob/main/README.md
+    status: todo
+  strongreject:
+    provides: "forbidden prompts + rubric judge"
+    url: https://github.com/dsbowen/strong_reject
+    data_url: https://github.com/alexandrasouly/strongreject/blob/main/strongreject_dataset/strongreject_dataset.csv
+    license: MIT
+    license_scope: "Project licence; README explicitly lists upstream datasets with unspecified or absent licences."
+    redistribute: TBC
+    redistribution_note: "MIT at project level does not resolve the listed upstream gaps. Establish row/source permissions before sharing the complete prompt text."
+    evidence:
+      - https://github.com/dsbowen/strong_reject/blob/main/README.md#license
+      - https://github.com/dsbowen/strong_reject/blob/main/LICENSE
+      - https://github.com/alexandrasouly/strongreject/blob/main/README.md#license
+    status: todo
+  multijail:
+    provides: "315 English harmful prompts translated into nine languages across high, medium and low resource levels (obfuscation family)"
+    url: https://huggingface.co/datasets/DAMO-NLP-SG/MultiJail
+    data_url: https://github.com/DAMO-NLP-SG/multilingual-safety-for-LLMs/blob/main/data/MultiJail.csv
+    license: MIT
+    license_scope: "Dataset card declares MIT; repository provides the licence text. The ethics statement describes the authors' research as solely for academic purposes and ethical use."
+    redistribute: TBC
+    redistribution_note: "Retain copyright and MIT permission notices. Clarify whether the academic-only statement imposes any data-redistribution restriction before approving unrestricted aggregate text release, using the same conservative treatment as JailbreakHub and SafeMTData."
+    evidence:
+      - https://huggingface.co/datasets/DAMO-NLP-SG/MultiJail/blob/main/README.md
+      - https://github.com/DAMO-NLP-SG/multilingual-safety-for-LLMs/blob/main/LICENSE
+    status: todo
+  safemtdata:
+    provides: "multi-turn ActorAttack queries (SoK uses 600)"
+    url: https://huggingface.co/datasets/SafeMTData/SafeMTData
+    code_url: https://github.com/AI45Lab/ActorAttack
+    license: MIT
+    license_scope: "Dataset card declares MIT but also says the benchmark is for educational and research purposes only."
+    redistribute: TBC
+    redistribution_note: "Retain MIT notices; clarify the research-only disclaimer and upstream HarmBench terms before approving unrestricted aggregate text release."
+    note: "Use Attack_600 (600 attack paths from 200 HarmBench queries), not the safety-training data."
+    evidence:
+      - https://huggingface.co/datasets/SafeMTData/SafeMTData/blob/main/README.md
+    status: todo
+  mhj:
+    provides: "multi-turn human jailbreaks (537)"
+    url: https://huggingface.co/datasets/ScaleAI/mhj
+    license: CC-BY-NC-4.0
+    license_scope: "Public dataset card declares CC-BY-NC-4.0 and adds no further reuse terms. The public API lists gate fields for name, affiliation, email (affiliation email if possible), country and purpose. Complete gate wording requires login and has not been accepted or fully reviewed."
+    redistribute: TBC
+    redistribution_note: "Declared licence permits noncommercial sharing with attribution, licence link and change notices. Confirm additional gated-access terms before redistributing the text."
+    note: "Obtain access through the official gate and preserve the release's redactions."
+    evidence:
+      - https://huggingface.co/datasets/ScaleAI/mhj
+      - https://huggingface.co/api/datasets/ScaleAI/mhj
+      - https://creativecommons.org/licenses/by-nc/4.0/
+    status: todo
+  cosafe:
+    provides: "multi-turn coreference attacks (1,400)"
+    url: https://github.com/ErxinYu/CoSafe-Dataset
+    data_url: https://github.com/ErxinYu/CoSafe-Dataset/tree/main/CoSafe%20datasets
+    license: TBC
+    redistribute: TBC
+    redistribution_note: "No explicit dataset licence found in the checked repository root/README. Ask the maintainers for data-use and redistribution terms."
+    evidence:
+      - https://github.com/ErxinYu/CoSafe-Dataset
+      - https://github.com/ErxinYu/CoSafe-Dataset/blob/main/README.md
+    status: todo
+  pku_saferlhf:
+    provides: "NeurIPS continuity (unsafe subset)"
+    url: https://huggingface.co/datasets/PKU-Alignment/PKU-SafeRLHF
+    license: CC-BY-NC-4.0
+    license_scope: "Dataset card declares CC-BY-NC-4.0 and describes the data as intended for research purposes; it does not state research-only use."
+    redistribute: conditional
+    redistribution_note: "Noncommercial sharing only; give attribution, link the licence and identify changes."
+    note: "Confirm the exact release and unsafe subset used in the NeurIPS experiment; do not silently substitute the latest version."
+    evidence:
+      - https://huggingface.co/datasets/PKU-Alignment/PKU-SafeRLHF/blob/main/README.md
+      - https://creativecommons.org/licenses/by-nc/4.0/
+    status: todo
+  neurips_curated_cyber:
+    provides: "NeurIPS curated cyber prompts (40 recorded in the original registry; count not yet verified)"
+    url: local
+    license: TBC
+    redistribute: TBC
+    redistribution_note: "Previously labelled 'ours', which is not a release licence. Locate the original prompts, verify the count, confirm authorship/third-party provenance and choose a team-approved licence."
+    evidence:
+      - docs/METHODOLOGY.md#51-proof-of-concept-the-bounds-exist-rq1
+    status: todo
 
 utility:  # benign prompts for the false-positive-rate constraint
-  or_bench: {provides: "over-refusal prompts (SoK samples 1,000)", url: TBC, license: TBC, status: todo}
-  xstest: {provides: "250 safe prompts that look unsafe", url: TBC, license: TBC, status: todo}
-  alpacaeval: {provides: "805 normal instructions", url: TBC, license: TBC, status: todo}
+  or_bench:
+    provides: "over-refusal prompts (SoK samples 1,000)"
+    url: https://huggingface.co/datasets/bench-llm/or-bench
+    license: CC-BY-4.0
+    license_scope: "Dataset card declaration."
+    redistribute: conditional
+    redistribution_note: "Give attribution, link the licence and identify changes."
+    note: "Use harmless prompts for utility. Reproduce SoK's selected IDs; do not assume its sample is the or-bench-hard-1k split."
+    evidence:
+      - https://huggingface.co/datasets/bench-llm/or-bench
+      - https://creativecommons.org/licenses/by/4.0/
+    status: todo
+  xstest:
+    provides: "250 safe prompts that look unsafe"
+    url: https://github.com/paul-rottger/xstest
+    data_url: https://github.com/paul-rottger/xstest/blob/main/xstest_prompts.csv
+    license: CC-BY-4.0
+    license_scope: "Prompts only; README assigns model completions separate provider terms."
+    redistribute: conditional
+    redistribution_note: "Give attribution, link the licence and identify changes. This assessment does not cover the released model completions."
+    note: "Select the 250 safe prompts; exclude the 200 unsafe contrast prompts from utility."
+    evidence:
+      - https://github.com/paul-rottger/xstest/blob/main/readme.md
+      - https://creativecommons.org/licenses/by/4.0/
+    status: todo
+  alpacaeval:
+    provides: "805 normal instructions"
+    url: https://huggingface.co/datasets/tatsu-lab/alpaca_eval
+    data_url: https://huggingface.co/datasets/tatsu-lab/alpaca_eval/blob/main/alpaca_eval.json
+    license: CC-BY-NC-4.0
+    license_scope: "Dataset card declaration; the evaluation code's Apache-2.0 licence is separate."
+    redistribute: conditional
+    redistribution_note: "Noncommercial sharing only; give attribution, link the licence and identify changes. Preserve source provenance."
+    evidence:
+      - https://huggingface.co/datasets/tatsu-lab/alpaca_eval
+      - https://creativecommons.org/licenses/by-nc/4.0/
+    status: todo
