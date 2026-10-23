@@ -11,6 +11,8 @@ Requires [uv](https://docs.astral.sh/uv/).
 ```bash
 uv sync
 uv run pytest
+uv run python scripts/fetch_data.py     # raw datasets into data/raw/ (pinned, checksummed)
+uv run python scripts/check_models.py   # which configured models OpenRouter serves
 ```
 
 ## Layout
@@ -25,7 +27,9 @@ uv run pytest
 | `harmfloor/taxonomy.py` | Label mapping; loaders must map labels through this |
 | `harmfloor/bounds.py` | Ceiling, floor and bound decomposition estimators |
 | `harmfloor/plots.py` | Paper figures |
-| `harmfloor/data/` | Benchmark loaders (one module per source) |
+| `harmfloor/data/` | Benchmark loaders (one module per source) and the annotation gate |
+| `data/annotations/` | Our reviewed labels, one JSONL per source; unreviewed items are held out |
+| `harmfloor/openrouter.py` | OpenRouter client; logs tokens and cost per call to `runs/` |
 
 ## Rules
 

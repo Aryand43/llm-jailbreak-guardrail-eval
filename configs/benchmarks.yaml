@@ -54,7 +54,8 @@ core:  # the four papers the revision is built on
       - https://huggingface.co/datasets/HongyeCao/SafeDialBench/raw/main/README.md
       - https://www.apache.org/licenses/LICENSE-2.0
     note: "Use English split for the main grid. Re-judge with our judge; do not reuse their 1-10 scores."
-    status: todo
+    revision: "hf:HongyeCao/SafeDialBench@0d27436754b80c28d40c3748ede8e498405a63a8 datasets_en.jsonl sha256:a5429b6477ab7d3f6e47da55e0a9c889bbbba7575dd2ba7e1672379a412bc988 (byte-identical to the GitHub copy)"
+    status: loaded  # harmfloor/data/safedialbench.py; all items held until annotations are reviewed
   multibreak:
     paper: "Song et al., MultiBreak (arXiv 2605.01687, ICML 2026)"
     provides: "10,389 multi-turn prompts, 2,665 intents, 2-6 turns, 7 attack categories, 26 safety categories"
@@ -86,7 +87,8 @@ prompts:  # additional sources pulled in through SoK / standard practice
       - https://github.com/JailbreakBench/jailbreakbench/blob/main/LICENSE
       - https://github.com/JailbreakBench/artifacts/blob/main/README.md
       - https://github.com/JailbreakBench/artifacts/blob/main/LICENSE
-    status: todo
+    revision: "hf:JailbreakBench/JBB-Behaviors@886acc352a31533ffbcf4ef22c744658688086fc data/harmful-behaviors.csv sha256:4a8ec6832056b631eb092dccc60d37a61c3d441268268888b3d006288afeffa1"
+    status: loaded  # harmfloor/data/jbb.py; all items held until annotations are reviewed
   jailbreakhub_ijp:
     provides: "in-the-wild jailbreak prompts (SoK samples 1,000)"
     url: https://huggingface.co/datasets/TrustAIRLab/in-the-wild-jailbreak-prompts

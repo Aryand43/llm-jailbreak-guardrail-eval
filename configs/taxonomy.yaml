@@ -62,6 +62,14 @@ attack_crosswalk:
     MultiJail: obfuscation_based  # low-resource-language translation
     ActorAttack: multi_turn
     X-Teaming: multi_turn
+  safedialbench:  # every SafeDialBench method is a multi-turn attack; the method becomes a strategy tag
+    Scene Construct: multi_turn
+    Purpose Reverse: multi_turn
+    Role Play: multi_turn
+    Topic Change: multi_turn
+    Reference Attack: multi_turn
+    Fallacy Attack: multi_turn
+    Probing Question: multi_turn
   neurips_curated_cyber:
     curated_cyber: human_based  # educational / role-play framing, hand-written
   direct_sources: [jbb_behaviors, harmbench, strongreject, pku_saferlhf]
