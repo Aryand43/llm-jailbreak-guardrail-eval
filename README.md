@@ -27,6 +27,9 @@ uv run pytest
 | `harmfloor/plots.py` | Paper figures |
 | `harmfloor/data/` | Benchmark loaders (one module per source) |
 
+Loader inputs, pinned dataset downloads, and the SafeDialBench annotation requirement
+are documented in [docs/DATA_LOADERS.md](docs/DATA_LOADERS.md).
+
 ## Rules
 
 - Never commit API keys. Put `OPENROUTER_API_KEY` in `.env` (gitignored).

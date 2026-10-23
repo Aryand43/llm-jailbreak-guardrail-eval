@@ -2,7 +2,8 @@
 
 A loader reads the raw files that A1 recorded under data/raw/<source>/ and yields Items. It must:
   - set item_id = f"{source}:{source_id}" and record source_version (revision or sha256);
-  - keep every native label verbatim in native_labels;
+  - keep every native label verbatim in native_labels, and nothing else there: review flags go in
+    needs_review, labels we assigned go in annotation;
   - map labels with harmfloor.taxonomy (never hard-code a family or domain in the loader);
   - set intent_id = item_id; cross-benchmark dedupe assigns the shared clusters later.
 """

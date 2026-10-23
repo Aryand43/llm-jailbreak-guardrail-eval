@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 # Vertical axis of the study: JailbreakRadar's six mechanism families, a no-attack reference,
 # and multi-turn (our extension; JailbreakRadar has no multi-turn family). See configs/taxonomy.yaml.
@@ -24,6 +24,12 @@ AttackFamily = Literal[
     "multi_turn",
 ]
 
+# Item fields whose values come from configs/taxonomy.yaml crosswalks.
+MappedField = Literal["attack_family", "strategy_tags", "harm_domain"]
+
+# What our review decided about an item the source did not label for us.
+Disposition = Literal["harmful", "benign", "excluded"]
+
 
 class Record(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
@@ -32,6 +38,15 @@ class Record(BaseModel):
 class Turn(Record):
     role: Literal["system", "user", "assistant"]
     content: str
+
+
+class Annotation(Record):
+    """What our review decided for an item the source did not label for us. Never upstream data."""
+
+    version: str  # sha256 of the reviewed annotation file
+    disposition: Disposition
+    domain: str | None = None  # the reviewed harm_domain; set iff disposition == "harmful"
+    reason: str | None = None  # why benign or excluded; a reviewer note otherwise
 
 
 class Item(Record):
@@ -49,9 +64,28 @@ class Item(Record):
     attack_method: str | None = None  # e.g. "PAIR", "Base64", "ActorAttack"
     attack_target_model: str | None = None  # model the attack was optimised on (transfer tracking)
     strategy_tags: list[str] = Field(default_factory=list)
-    harm_domain: str  # unified coarse domain, configs/taxonomy.yaml
+    harm_domain: str | None  # unified coarse domain, configs/taxonomy.yaml; None iff is_benign
     native_labels: dict[str, str] = Field(default_factory=dict)  # original labels, verbatim
+    needs_review: list[MappedField]  # explicit, even when empty; legacy caches must be rebuilt
+    annotation: Annotation | None = None  # set when the intent and harm domain come from our review
     license: str
+
+    @field_validator("native_labels")
+    @classmethod
+    def reject_legacy_review_flags(cls, labels: dict[str, str]) -> dict[str, str]:
+        legacy = sorted(key for key in labels if key.endswith("_needs_review"))
+        if legacy:
+            raise ValueError(
+                f"legacy review flags in native_labels: {', '.join(legacy)}; "
+                "rebuild the cache from raw data with the current loader"
+            )
+        return labels
+
+    @model_validator(mode="after")
+    def check_benign_has_no_domain(self) -> "Item":
+        if self.is_benign != (self.harm_domain is None):
+            raise ValueError("harm_domain must be set for harmful items and None for benign items")
+        return self
 
 
 class PooledSample(Record):

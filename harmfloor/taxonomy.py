@@ -33,6 +33,11 @@ def load(path: Path = TAXONOMY_PATH) -> dict[str, Any]:
         return yaml.safe_load(f)
 
 
+def harm_domains() -> frozenset[str]:
+    """The unified coarse domains a reviewed annotation may assign."""
+    return frozenset(load()["harm_domains"])
+
+
 def attack_family(source: str, method: str) -> Mapping:
     tax = load()
     if source in tax["attack_crosswalk"]["direct_sources"]:
