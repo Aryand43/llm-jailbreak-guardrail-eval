@@ -72,7 +72,7 @@ attack_crosswalk:
     Probing Question: multi_turn
   neurips_curated_cyber:
     curated_cyber: human_based  # educational / role-play framing, hand-written
-  direct_sources: [jbb_behaviors, harmbench, strongreject, pku_saferlhf]
+  direct_sources: [jbb_behaviors, harmbench, strongreject, pku_saferlhf, or_bench, xstest]  # utility sets are plain (benign) requests
 
 # multi-turn strategies -> shared strategy tags (secondary axis inside `multi_turn`)
 strategy_crosswalk:

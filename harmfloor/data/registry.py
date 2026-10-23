@@ -48,7 +48,7 @@ def register(source: str) -> Callable[[Loader], Loader]:
 
 
 def load(source: str, raw_root: Path = RAW_ROOT) -> LoadResult:
-    from harmfloor.data import jbb, safedialbench  # noqa: F401  (registers the loaders)
+    from harmfloor.data import jbb, safedialbench, utility  # noqa: F401  (registers the loaders)
 
     if source not in LOADERS:
         raise KeyError(f"no loader registered for {source!r}")

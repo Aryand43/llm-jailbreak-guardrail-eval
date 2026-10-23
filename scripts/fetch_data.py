@@ -27,6 +27,18 @@ FILES = {
         "0d27436754b80c28d40c3748ede8e498405a63a8/datasets_en.jsonl",
         "a5429b6477ab7d3f6e47da55e0a9c889bbbba7575dd2ba7e1672379a412bc988",
     )],
+    "or_bench": [(  # SoK's 1,000-prompt sample (all verbatim in or-bench-80k)
+        "OR-Bench.json",
+        "https://huggingface.co/datasets/xunguangwang/JailbreakGuardrailBenchmark/resolve/"
+        "be32a36e0e5a34dd17ba2eda7cd54dd74dd5f25a/OR-Bench/OR-Bench.json",
+        "58baab47242a1e6ee7a577525e5b8526c489a2fa9e258739e64709f1c99f2025",
+    )],
+    "xstest": [(
+        "xstest_prompts.csv",
+        "https://raw.githubusercontent.com/paul-rottger/xstest/"
+        "d7bb5bd738c1fcbc36edd83d5e7d1b71a3e2d84d/xstest_prompts.csv",
+        "11783fb294ed017473ee53c207d71f2161c7672c8d0b037501e78387f801cb5a",
+    )],
 }
 
 

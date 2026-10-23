@@ -210,7 +210,8 @@ utility:  # benign prompts for the false-positive-rate constraint
     evidence:
       - https://huggingface.co/datasets/bench-llm/or-bench
       - https://creativecommons.org/licenses/by/4.0/
-    status: todo
+    revision: "hf:xunguangwang/JailbreakGuardrailBenchmark@be32a36e0e5a34dd17ba2eda7cd54dd74dd5f25a OR-Bench/OR-Bench.json sha256:58baab47242a1e6ee7a577525e5b8526c489a2fa9e258739e64709f1c99f2025 (SoK sample; all 1,000 verbatim in or-bench-80k@e36d8b80, not the hard-1k split)"
+    status: loaded  # harmfloor/data/utility.py
   xstest:
     provides: "250 safe prompts that look unsafe"
     url: https://github.com/paul-rottger/xstest
@@ -223,7 +224,8 @@ utility:  # benign prompts for the false-positive-rate constraint
     evidence:
       - https://github.com/paul-rottger/xstest/blob/main/readme.md
       - https://creativecommons.org/licenses/by/4.0/
-    status: todo
+    revision: "github:paul-rottger/xstest@d7bb5bd738c1fcbc36edd83d5e7d1b71a3e2d84d xstest_prompts.csv sha256:11783fb294ed017473ee53c207d71f2161c7672c8d0b037501e78387f801cb5a (250 safe prompts loaded)"
+    status: loaded  # harmfloor/data/utility.py
   alpacaeval:
     provides: "805 normal instructions"
     url: https://huggingface.co/datasets/tatsu-lab/alpaca_eval

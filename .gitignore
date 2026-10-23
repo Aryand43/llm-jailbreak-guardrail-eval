@@ -7,3 +7,6 @@ data/raw/
 data/cache/
 *.pyc
 .DS_Store
+
+# annotation worksheets hold source text and are regenerable
+data/annotations/worksheets/
