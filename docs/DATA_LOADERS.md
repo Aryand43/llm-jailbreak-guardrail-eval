@@ -1,91 +1,75 @@
 # Dataset loaders
 
-Loaders read local files and return `harmfloor.schema.Item` records. They make no network or model calls. Raw data and local annotations belong under the gitignored `data/raw/` directory.
+Implementation lives on `aniket`; Aryan is the supervisor and protocol approval owner. See [ANNOTATION.md](ANNOTATION.md) for review instructions and [INTEGRATION_STATUS.md](INTEGRATION_STATUS.md) for the handoff. Implemented validation does not constitute approval of the proposed labelling rules.
+
+## Acquire and load
+
+```bash
+uv sync --locked
+uv run python scripts/fetch_data.py
+uv run pytest
+```
+
+The fetch script pins revisions and SHA-256 checksums for JBB, SafeDialBench English, SoK's OR-Bench sample and XSTest. Raw files remain under ignored `data/raw/<source>/`. See `configs/benchmarks.yaml` for source versions and terms; retain applicable attribution and licence notices when sharing data.
 
 ```python
-from harmfloor.data import load
+from harmfloor.data import load, evaluation_pool
 
-items = list(load("jbb_behaviors"))
-# SafeDialBench emits only dialogues with reviewed annotations (see below):
-# items = list(load("safedialbench"))
-
-# A different raw-data root is also supported:
-# items = list(load("jbb_behaviors", raw_root=Path("my-data/raw")))
+result = load("jbb_behaviors")  # returns LoadResult, not an iterator
+print(result.coverage)         # harmful / benign / held / excluded counts
+print(result.held)             # source IDs and reasons
+print(result.excluded)         # reviewed exclusions with reasons
+items = evaluation_pool(result.items)
 ```
 
-Materialize the iterator before publishing or exporting a dataset so validation errors cannot leave a partial release. Loaders fail on missing files, malformed records, duplicate identifiers, and unmapped labels. Every item records a SHA-256 of its raw source file, its original source ID, and native labels. Initially `intent_id == item_id`; cross-source intent deduplication happens later.
+`load(source, raw_root=Path(...))` supports a different raw-data root. Reviewed annotations still come from `data/annotations/`; lower-level loader tests inject a separate annotation root. All rows are validated before a result is returned. A missing raw file is an error. Missing annotation files or entries hold items; they do not prevent the reviewed subset from loading. JBB and SafeDialBench log coverage, with a warning while anything is held.
 
-`native_labels` holds upstream fields only, verbatim. Our own metadata has typed fields: `needs_review` lists the fields whose taxonomy mapping is still a `review: true` proposal, and `annotation` records what our review decided (`disposition`, the assigned `harm_domain`, and a `reason`) for sources whose release has no harm domain of its own. A harmful item carries a `harm_domain`; a benign item has `harm_domain=None` and `is_benign=True`.
+## Reviewed annotations and provenance
 
-`needs_review` must be present explicitly, including `[]` when no mappings need review. Older cached Items without that field, or with `*_needs_review` flags inside `native_labels`, are rejected when parsed. Rebuild those caches from the raw files with the current loaders; do not remove the old flags and insert an empty list manually. Reloading preserves the current taxonomy review state. Cached Items are snapshots: regenerate them after any annotation or taxonomy change.
+Loaders read only `data/annotations/jbb_behaviors.jsonl` and `data/annotations/safedialbench.jsonl`. Each JSONL row contains `source_id`, `source_sha256`, `verdict`, `harm_domain`, `intent`, `reason`, `drafted_by`, `reviewed` and `reviewer`. Use the worksheet importer to create these files.
 
-## Reviewed annotations
+- `harmful`: one valid harm domain; SafeDialBench also requires a standalone intent.
+- `benign`: no domain and a reason; SafeDialBench also requires an intent.
+- `excluded`: no domain or intent, with an exclusion reason; never emitted.
+- Missing or `reviewed: false` entries are held. `reviewed` must be a JSON boolean. Reviewed entries require a named reviewer.
 
-JBB's categories mix harm domains and SafeDialBench ships no detailed labels, so under the team's labelling rules (2026-10-23) each item's `harm_domain` is reviewed per item in a sidecar file, never mapped from a native category. One file per source, bound to the raw file's checksum: `jbb_behaviors/annotations.json` and `safedialbench/annotations_en.json`. An item is emitted only once its entry is `reviewed: true`; everything else is held.
+Final annotation files are validated strictly, including any unreviewed rows. Incomplete drafts belong in `data/annotations/drafts/`, which loaders never read. Unknown or duplicate IDs, stale source hashes, unknown fields, contradictory decisions and invalid reviewed content fail instead of quietly dropping data.
 
-Each entry is one of three dispositions:
+Each emitted item records the source checksum and ID, typed review flags, and annotation provenance: annotation-file checksum, decision, domain, reason, raw checksum, drafter and reviewer. `native_labels` contains upstream fields only. Benign items must have `harm_domain=None`; harmful items must have a domain. Duplicate item IDs are rejected at the evaluation gate.
 
-```json
-{"disposition": "harmful",  "domain": "cyber", "intent": "<standalone request>", "reviewed": true}
-{"disposition": "benign",   "intent": "<standalone request>", "reason": "<why benign>", "reviewed": true}
-{"disposition": "excluded", "reason": "<why not scored>", "reviewed": true}
+Rebuild cached Items after source, annotation or taxonomy changes. Old caches without `needs_review`, with review flags in native labels, or without required JBB/SafeDialBench annotation provenance are rejected. Do not manufacture empty flags to make old caches pass.
+
+## Source behavior
+
+| Source | Pinned file | Loader behavior |
+|---|---|---|
+| JBB | `jbb_behaviors/harmful-behaviors.csv` | 100 raw behaviors; per-item annotation gate |
+| SafeDialBench EN | `safedialbench/datasets_en.jsonl` | 2,037 raw dialogues; per-item annotation gate |
+| OR-Bench | `or_bench/OR-Bench.json` | 1,000 benign prompts from the pinned SoK sample |
+| XSTest | `xstest/xstest_prompts.csv` | 250 safe prompts; 200 unsafe contrast prompts not included |
+
+JBB uses the CSV's numeric `Index` as `source_id`, and `Goal` as intent and user turn. `Index`, `Behavior`, `Category` and `Source` remain verbatim native labels. `Target` is never imported. This loader covers harmful behaviors, not the separate benign split or attack artifacts. Domain choices are per item; native categories do not automatically determine them.
+
+SafeDialBench retains native `task`, `method`, `model_type`, `scene` and `id`. The native spelling `Scence Construct` remains in native labels and has an explicit taxonomy alias. Every raw dialogue's method mapping is checked, even while held. `model_type` is not treated as the attacked target model.
+
+SafeDialBench `turns` contains **user turns only**. In accordance with METHODOLOGY §7, the future runner must generate intervening assistant turns from the target and sample the final response. `reference_turns` contains the source's earlier assistant responses for annotation and audit; it must not be passed as target-generated history. Neither field includes the stored final bot response. This loader does not implement the experiment runner. Aryan must resolve how context-dependent annotations are checked when regenerated target history changes the request's meaning.
+
+Dialogue 645 contains a blank user turn. It may remain held or be explicitly excluded by a reviewer; including it raises an error. The loader never silently edits the source dialogue. Blank earlier assistant turns also prevent inclusion.
+
+## Evaluation gate
+
+`evaluation_pool(items)` rejects open `attack_family`, `harm_domain` **and** `strategy_tags` flags by default. It also treats populated `provisional_tags` as an unresolved strategy mapping. Proposed strategies stay separate from approved `strategy_tags`.
+
+`allow_provisional_strategies=True` can admit unresolved secondary tags, but never unresolved family/domain mappings. Use that option only after Aryan records the policy decision in METHODOLOGY §10. All seven SafeDialBench family and strategy mappings currently remain proposals. An item-level annotation does not approve a taxonomy mapping.
+
+Review mappings on the methodology's sample, record the decision, clear only approved `review: true` entries, then reload in a fresh process (or clear `taxonomy.load`'s cache). Utility loaders pass the current gate; JBB and SafeDialBench currently emit nothing because no human-reviewed annotation file has been created.
+
+## Migration from the old format
+
+Old `data/raw/jbb_behaviors/annotations.json` and `data/raw/safedialbench/annotations_en.json` are preserved as legacy drafts. They are no longer loader inputs. The migration script checks source hashes, translates JBB Behavior IDs to Index IDs, preserves each original entry and records an ID ledger. It refuses reviewed inputs and never approves labels.
+
+```bash
+uv run python scripts/migrate_annotations.py --help
 ```
 
-- **harmful** needs a `domain` from the 13 in `configs/taxonomy.yaml` (`harm_domains`). It is scored normally.
-- **benign** is a protective, educational or otherwise safe request kept for the false-positive-rate test (`is_benign=True`, no domain). A refusal of it is a false positive, so mark benign only when it is clearly safe; hold anything unclear.
-- **excluded** is dropped from the study (unusable context, or a request whose only harm is rudeness, satire or blasphemy). It needs a `reason` and is not emitted.
-
-`domain` belongs only to harmful entries; `intent` is required for harmful and benign SafeDialBench entries (JBB uses the CSV `Goal`) and forbidden on excluded. `reviewed` must be the JSON boolean, not a string. `intent` is a neutral, standalone description of the final request; do not invent a harmful aim, and a safety-related subject does not by itself make a request harmful (rule 1: label the harmful content a fully compliant answer would have to contain). When several domains apply, pick the primary one by the fixed order in rule 2.
-
-The loader sorts every dialogue into four buckets, all checked before anything is yielded:
-
-- **harmful / benign:** emitted (benign with `is_benign=True`).
-- **held** (not emitted, not an error): no entry, or `reviewed: false`. Drafts are not validated until reviewed, so a messy draft is simply held.
-- **excluded:** a reviewed `excluded` entry.
-- **Error:** a stale checksum, an id not in the raw file, a duplicate key, a non-boolean `reviewed`, an unmapped method (SafeDialBench), an unknown annotation key, or a reviewed entry with an unknown/absent domain, a blank intent, a misplaced field or a blank turn.
-
-Each load logs the four counts, as a warning while anything is held. For the id lists, call the loader's `coverage(Path("data/raw/<source>"))`, which returns `harmful`, `benign`, `held` and `excluded`. Emitted items carry `annotation.version` (the sidecar's SHA-256), `annotation.disposition` and `annotation.domain`, kept separate from the upstream `native_labels`. An AI-assisted draft is not human review: leave its entries `reviewed: false` until the team's procedure is complete.
-
-## Source snapshots
-
-These official snapshots were acquired on 2026-10-23. Dataset files are not committed.
-
-| Source | Local file under `data/raw/` | Revision | SHA-256 |
-|---|---|---|---|
-| [JBB harmful behaviors](https://huggingface.co/datasets/JailbreakBench/JBB-Behaviors) | `jbb_behaviors/harmful-behaviors.csv` | `886acc352a31533ffbcf4ef22c744658688086fc` | `4a8ec6832056b631eb092dccc60d37a61c3d441268268888b3d006288afeffa1` |
-| [SafeDialBench English](https://huggingface.co/datasets/HongyeCao/SafeDialBench) | `safedialbench/datasets_en.jsonl` | `0d27436754b80c28d40c3748ede8e498405a63a8` | `a5429b6477ab7d3f6e47da55e0a9c889bbbba7575dd2ba7e1672379a412bc988` |
-
-To acquire these same files in PowerShell:
-
-```powershell
-New-Item -ItemType Directory -Force data/raw/jbb_behaviors, data/raw/safedialbench
-Invoke-WebRequest -Uri 'https://huggingface.co/datasets/JailbreakBench/JBB-Behaviors/resolve/886acc352a31533ffbcf4ef22c744658688086fc/data/harmful-behaviors.csv' -OutFile 'data/raw/jbb_behaviors/harmful-behaviors.csv'
-Invoke-WebRequest -Uri 'https://huggingface.co/datasets/HongyeCao/SafeDialBench/resolve/0d27436754b80c28d40c3748ede8e498405a63a8/datasets_en.jsonl' -OutFile 'data/raw/safedialbench/datasets_en.jsonl'
-Get-FileHash -Algorithm SHA256 data/raw/jbb_behaviors/harmful-behaviors.csv, data/raw/safedialbench/datasets_en.jsonl
-```
-
-Compare the hashes with the table. Preserve the upstream dataset cards and applicable licence notices when redistributing; see `configs/benchmarks.yaml`. The development downloads also have local `provenance.json`, `UPSTREAM_README.md`, and `LICENSE` files.
-
-## JBB harmful behaviors
-
-The loader turns each reviewed CSV behavior into a direct-request item. The upstream `Behavior` identifier becomes `source_id`; `Goal` is the intent and the sole user turn (JBB requests are already standalone, so no per-item intent is reviewed). It preserves `Index`, `Behavior`, `Category`, and `Source` in `native_labels`. The stored `Target` response is not a prompt or a new model response and is not imported. `attack_family` is `direct`.
-
-This loader covers the **behavior split**, not submitted PAIR/GCG/etc. attack artifacts or the benign split. Those formats require separate integration and transfer-target provenance. The broader registry entry continues to describe those available artifacts.
-
-The ten JBB categories mix harm domains (a nuclear-weapons request sits under `Government decision-making`), so the category is **not** mapped to a domain. Instead each behavior's `harm_domain` is reviewed per item in `jbb_behaviors/annotations.json` (see **Reviewed annotations**). JBB is a harmful-behaviors benchmark, so its entries are `harmful`; `benign` is not used (JBB has its own benign split) and `excluded` only for a genuinely unusable row. `read_behaviors` checks the raw CSV structure without annotations. Registry status is `sourced` until the drafts are reviewed.
-
-## SafeDialBench English
-
-The official English file contains 2,037 dialogues, with fields `task`, `method`, `model_type`, `scene`, `id`, and `history`. Histories contain `user`/`bot` pairs. The upstream method spelling `Scence Construct` is preserved and explicitly mapped in the taxonomy.
-
-The loader emits one item per included dialogue. It preserves each earlier user/bot exchange and ends at the final user turn, omitting the stored final bot reply. This is a **fixed-context final-turn evaluation**, not a fresh interactive rollout of the whole conversation. `model_type` is preserved as a native generator label; it is not treated as `attack_target_model`. No upstream judgment scores are used.
-
-The release has only six broad safety tasks (e.g. `Privacy`) and no standalone intent; a scene label such as `Law and Morality` cannot substitute for either. So the `harm_domain`, `intent` and disposition come from the reviewed `safedialbench/annotations_en.json` (see **Reviewed annotations**), not from the native fields. Protective or educational dialogues (recognising abuse, historical analysis) are kept as `benign` for the false-positive test; a request whose only issue is rudeness, satire or blasphemy is `excluded`; genuinely unclear dialogues stay held.
-
-Dialogue **645** in this snapshot has a whitespace-only user turn at history index 2. If reviewed as harmful or benign it errors on the blank turn; a reviewer excludes it explicitly (`{"disposition": "excluded", "reason": "...", "reviewed": true}`). The loader never edits or drops the source turn itself. `read_dialogues` checks the raw structure without annotations, and `load` checks every dialogue's method mapping even while all entries are held.
-
-## Entering the evaluation set
-
-Build the evaluation set from `harmfloor.data.evaluation_pool(items)`. It raises if any item carries an unreviewed **primary-axis** mapping — `attack_family` or `harm_domain` — in `needs_review`, naming each source and field with a count. `strategy_tags` is a secondary axis and does not block (team decision, rule 5), so a provisional strategy tag is reported but still admitted. Flagged items are refused rather than dropped, so the pool cannot be skewed silently. To clear a blocking flag, validate the mapping on ~20 items (all available when fewer exist), record the decision, clear its `review: true` in `configs/taxonomy.yaml`, and reload in a fresh process (or call `harmfloor.taxonomy.load.cache_clear()`). Approving a dialogue's annotation does not approve a taxonomy mapping; they are separate steps.
-
-Keep first-pass review notes and annotation drafts under the ignored `data/cache/` directory; `jbb_domain_review.csv` lists the proposed JBB domains for review, and the pilot's `START_HERE.md` explains the independent annotation workflow. A safety-related subject does not by itself establish a harmful requested action: preserve the actual request, and hold unclear cases until the team's labelling rules are applied.
+The local migration is already complete: 100 JBB drafts (including 53 CHECK notes) and the existing 20-dialogue SafeDialBench pilot. The other SafeDialBench entries remain in the original file. Migration reports record hashes, counts and provenance gaps. Existing draft outputs cannot be overwritten by rerunning migration. See the review workflow before changing any label.

@@ -54,7 +54,7 @@ core:  # the four papers the revision is built on
       - https://huggingface.co/datasets/HongyeCao/SafeDialBench/tree/main
       - https://huggingface.co/datasets/HongyeCao/SafeDialBench/raw/main/README.md
       - https://www.apache.org/licenses/LICENSE-2.0
-    note: "Use English split for the main grid. Re-judge with our judge; do not reuse their 1-10 scores. The 2,037-row release has no harm labels or standalone intents, so each dialogue's harm_domain, intent and harmful/benign/excluded disposition is reviewed per item in annotations_en.json (team decision 2026-10-23); protective dialogues are kept as is_benign for the FPR test. Dialogue 645 has a whitespace-only user turn and needs explicit review/exclusion. See docs/DATA_LOADERS.md."
+    note: "Use English split; do not reuse upstream scores. The 2,037-row release needs per-item reviewed decisions in data/annotations/safedialbench.jsonl. Labelling rules and benign FPR eligibility remain pending Aryan approval; no reviewed items currently emit. User-only turns support target-history regeneration; reference_turns preserve source context for review. Dialogue 645 has a blank user turn and must remain held or be explicitly excluded. See docs/DATA_LOADERS.md."
     source_revision: 0d27436754b80c28d40c3748ede8e498405a63a8
     source_sha256: a5429b6477ab7d3f6e47da55e0a9c889bbbba7575dd2ba7e1672379a412bc988
     status: sourced
@@ -89,7 +89,7 @@ prompts:  # additional sources pulled in through SoK / standard practice
       - https://github.com/JailbreakBench/jailbreakbench/blob/main/LICENSE
       - https://github.com/JailbreakBench/artifacts/blob/main/README.md
       - https://github.com/JailbreakBench/artifacts/blob/main/LICENSE
-    note: "Loader covers the 100 harmful behaviors, not attack artifacts or the benign split. Categories mix harm domains, so each item's harm_domain is reviewed per item in annotations.json (team decision 2026-10-23); Item emission requires reviewed entries. See docs/DATA_LOADERS.md."
+    note: "Loader covers the 100 harmful behaviors, not attack artifacts or the benign split. Per-item decisions use data/annotations/jbb_behaviors.jsonl with numeric Index IDs. Original Behavior IDs remain in native_labels. Labelling rules remain pending Aryan approval; no reviewed items currently emit. See docs/DATA_LOADERS.md."
     source_revision: 886acc352a31533ffbcf4ef22c744658688086fc
     source_sha256: 4a8ec6832056b631eb092dccc60d37a61c3d441268268888b3d006288afeffa1
     status: sourced
@@ -210,11 +210,14 @@ utility:  # benign prompts for the false-positive-rate constraint
     license_scope: "Dataset card declaration."
     redistribute: conditional
     redistribution_note: "Give attribution, link the licence and identify changes."
-    note: "Use harmless prompts for utility. Reproduce SoK's selected IDs; do not assume its sample is the or-bench-hard-1k split."
+    note: "Loaded 1,000 benign prompts from the pinned SoK OR-Bench sample, preserving its indices; do not substitute the or-bench-hard-1k split. Source-level loading verified 2026-10-26; final utility sampling/calibration remains to be designed."
+    data_url: https://huggingface.co/datasets/xunguangwang/JailbreakGuardrailBenchmark/blob/be32a36e0e5a34dd17ba2eda7cd54dd74dd5f25a/OR-Bench/OR-Bench.json
+    source_revision: be32a36e0e5a34dd17ba2eda7cd54dd74dd5f25a
+    source_sha256: 58baab47242a1e6ee7a577525e5b8526c489a2fa9e258739e64709f1c99f2025
     evidence:
       - https://huggingface.co/datasets/bench-llm/or-bench
       - https://creativecommons.org/licenses/by/4.0/
-    status: todo
+    status: loaded
   xstest:
     provides: "250 safe prompts that look unsafe"
     url: https://github.com/paul-rottger/xstest
@@ -223,11 +226,13 @@ utility:  # benign prompts for the false-positive-rate constraint
     license_scope: "Prompts only; README assigns model completions separate provider terms."
     redistribute: conditional
     redistribution_note: "Give attribution, link the licence and identify changes. This assessment does not cover the released model completions."
-    note: "Select the 250 safe prompts; exclude the 200 unsafe contrast prompts from utility."
+    note: "Loaded the 250 safe prompts; the 200 unsafe contrast prompts are not utility items. Source-level loading verified 2026-10-26; final utility sampling/calibration remains to be designed."
+    source_revision: d7bb5bd738c1fcbc36edd83d5e7d1b71a3e2d84d
+    source_sha256: 11783fb294ed017473ee53c207d71f2161c7672c8d0b037501e78387f801cb5a
     evidence:
       - https://github.com/paul-rottger/xstest/blob/main/readme.md
       - https://creativecommons.org/licenses/by/4.0/
-    status: todo
+    status: loaded
   alpacaeval:
     provides: "805 normal instructions"
     url: https://huggingface.co/datasets/tatsu-lab/alpaca_eval

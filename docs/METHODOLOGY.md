@@ -81,7 +81,7 @@ Core (the four papers): **JailbreakRadar** (160 forbidden questions, 16 violatio
 Every item becomes a `harmfloor.schema.Item`. Each carries its attack family, harm domain, strategy tags and intent cluster, with its native labels kept verbatim. Crosswalks live in `configs/taxonomy.yaml`:
 
 - **Attack family (vertical axis):** JailbreakRadar's six (human-, obfuscation-, heuristic-, feedback-, fine-tuning-, generation-parameter-based), plus **direct** (no attack; the reference row) and **multi-turn** (our extension). SoK's attacks are re-filed under JailbreakRadar families (e.g. TAP → feedback, MultiJail → obfuscation).
-- **Strategy tags (inside multi-turn):** MultiBreak's 7 categories and SafeDialBench's 7 strategies mapped to 7 shared tags. Three SafeDialBench mappings are marked for review.
+- **Strategy tags (inside multi-turn):** MultiBreak's 7 categories and SafeDialBench's 7 strategies mapped to 7 shared tags. All seven SafeDialBench strategy proposals currently remain flagged pending supervisor review; see D9 below.
 - **Harm domain:** 13 coarse domains that JailbreakRadar's 16, MultiBreak's 26 and SafeDialBench's second-tier labels all map onto. SafeDialBench's Impolite / Satire / Blasphemy are excluded from harm floors.
 
 ### 4.3 Deduplication and sampling
@@ -173,3 +173,8 @@ With no true floor (L = 0) the test fires in at most 7% of studies, so it does n
 | D4 | GPU for WildGuard / GradientCuff | **Access confirmed (Prof. Anupam, 21 Oct; via Udayon).** GradientCuff on 70B+ targets depends on GPU memory | Aryan to check GPU specs with Udayon |
 | D5 | Venue deadline | "ACL abstract, January" | confirm the ARR cycle and date |
 | D6 | NeurIPS reviews | map each review point to a section here | Aryan to add reviews to `docs/` |
+| D7 | Annotation inclusion and primary domain | **Pending:** operational harmful/benign/excluded rules and handling multiple domains; no automatic fixed priority order approved | Aryan to approve rubric and adjudicate ambiguous pilot items |
+| D8 | Benign SafeDialBench and independent review | **Pending:** FPR eligibility, independent sample size, agreement criteria and reconciliation procedure | Aryan; preserve first reviews and compute agreement before reconciliation |
+| D9 | SafeDialBench taxonomy and provisional tags | **Pending:** validate all seven family/strategy proposals; decide whether unresolved secondary tags can enter primary-axis analysis | Aryan; default gate blocks all open flags until a policy is recorded |
+| D10 | Source-context annotation versus generated history | **Pending:** annotation uses source reference context while §7 generates target history; define context/intent validity checks and handling semantic drift | Aryan before evaluation; never replay source bot responses as target outputs |
+| D11 | Target-model availability and pilot budget | **Pending:** four of nine configured slugs absent from public catalogue on 2026-10-26; choose replacements or omissions, provider pins and a bounded pilot budget | Aryan; catalogue parameter support is not proof of provider behavior |

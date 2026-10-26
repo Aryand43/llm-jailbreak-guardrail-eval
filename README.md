@@ -4,6 +4,11 @@ Bound-based evaluation of residual jailbreak harm across attack taxonomies, benc
 
 Start with [docs/METHODOLOGY.md](docs/METHODOLOGY.md).
 
+Integration is being prepared on `aniket`, with Aryan as supervisor. See the
+[handoff and remaining decisions](docs/INTEGRATION_STATUS.md),
+[loader API](docs/DATA_LOADERS.md), and [annotation workflow](docs/ANNOTATION.md).
+Draft labels and implemented checks do not constitute protocol approval.
+
 ## Setup
 
 Requires [uv](https://docs.astral.sh/uv/).
@@ -11,6 +16,8 @@ Requires [uv](https://docs.astral.sh/uv/).
 ```bash
 uv sync
 uv run pytest
+uv run python scripts/fetch_data.py     # raw datasets into data/raw/ (pinned, checksummed)
+uv run python scripts/check_models.py   # which configured models OpenRouter serves
 ```
 
 ## Layout
@@ -25,10 +32,9 @@ uv run pytest
 | `harmfloor/taxonomy.py` | Label mapping; loaders must map labels through this |
 | `harmfloor/bounds.py` | Ceiling, floor and bound decomposition estimators |
 | `harmfloor/plots.py` | Paper figures |
-| `harmfloor/data/` | Benchmark loaders (one module per source) |
-
-Loader inputs, pinned dataset downloads, and the SafeDialBench annotation requirement
-are documented in [docs/DATA_LOADERS.md](docs/DATA_LOADERS.md).
+| `harmfloor/data/` | Benchmark loaders (one module per source) and the annotation gate |
+| `data/annotations/` | Our reviewed labels, one JSONL per source; unreviewed items are held out |
+| `harmfloor/openrouter.py` | OpenRouter client; logs tokens and cost per call to `runs/` |
 
 ## Rules
 

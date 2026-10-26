@@ -7,3 +7,9 @@ data/raw/
 data/cache/
 *.pyc
 .DS_Store
+
+# annotation worksheets hold source text and are regenerable
+data/annotations/worksheets/
+# Local drafts retain legacy uncertainty and source-derived text; share deliberately after review.
+data/annotations/drafts/
+data/annotations/history/

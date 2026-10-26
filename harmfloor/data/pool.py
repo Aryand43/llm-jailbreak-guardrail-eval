@@ -7,23 +7,25 @@ from collections.abc import Iterable
 
 from harmfloor.schema import Item
 
-# Mappings that place an item on a reported axis: an unreviewed one would move a bound.
-# strategy_tags are a secondary axis and do not block (team decision, rule 5).
-BLOCKING_FIELDS = frozenset({"attack_family", "harm_domain"})
+BLOCKING_FIELDS = frozenset({"attack_family", "harm_domain", "strategy_tags"})
 
 
-def evaluation_pool(items: Iterable[Item]) -> list[Item]:
-    """Admit items for sampling only if no primary-axis label rests on an unreviewed mapping.
+def evaluation_pool(items: Iterable[Item], *, allow_provisional_strategies: bool = False) -> list[Item]:
+    """Require reviewed mappings. Aryan must approve any primary-axis-only strategy exception.
 
     Flagged items are refused, not dropped: dropping them would silently skew the pool.
     Validate the `review: true` mappings in configs/taxonomy.yaml, then reload.
     """
     items = list(items)
+    duplicates = [key for key, count in Counter(i.item_id for i in items).items() if count > 1]
+    if duplicates:
+        raise ValueError(f"duplicate evaluation item IDs: {duplicates[:10]}")
+    blocking = BLOCKING_FIELDS - ({"strategy_tags"} if allow_provisional_strategies else set())
     pending = Counter(
         f"{item.source}.{field}"
         for item in items
-        for field in item.needs_review
-        if field in BLOCKING_FIELDS
+        for field in set(item.needs_review) | ({"strategy_tags"} if item.provisional_tags else set())
+        if field in blocking
     )
     if pending:
         detail = ", ".join(f"{key} ({count})" for key, count in sorted(pending.items()))

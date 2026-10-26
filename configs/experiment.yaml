@@ -2,15 +2,16 @@
 
 models:  # open-weight via OpenRouter (we need n samples, fixed decoding and, for white-box, weights)
   # Slugs are candidates: Aniket confirms each is served, honours temperature/top_p/seed, and pins
-  # the upstream provider.
+  # the upstream provider. Re-check with: uv run python scripts/check_models.py
+  # Never use ':free' variants for experiments (rate limits, provider logging).
   neurips_continuity:
     - meta-llama/llama-3.2-3b-instruct
-    - nvidia/llama-3.1-nemotron-70b-instruct
-    - nvidia/llama-3.1-nemotron-ultra-253b-v1
+    - nvidia/llama-3.1-nemotron-70b-instruct    # Absent from catalogue 2026-10-26; Aryan to decide replacement/drop
+    - nvidia/llama-3.1-nemotron-ultra-253b-v1   # Absent from catalogue 2026-10-26; Aryan to decide replacement/drop
   benchmark_overlap:  # models the four papers also report, so our ceilings can be sanity-checked
     - meta-llama/llama-3.1-8b-instruct   # SoK main target, MultiBreak, SafeDialBench
-    - qwen/qwen3-8b                      # MultiBreak
-    - deepseek/deepseek-r1-distill-qwen-7b  # MultiBreak
+    - qwen/qwen3-8b                      # MultiBreak; absent 2026-10-26; Aryan to decide
+    - deepseek/deepseek-r1-distill-qwen-7b  # MultiBreak; absent 2026-10-26; Aryan to decide
   scale_and_family:
     - meta-llama/llama-3.3-70b-instruct
     - google/gemma-3-27b-it

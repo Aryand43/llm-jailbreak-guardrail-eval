@@ -1,21 +1,52 @@
 """Loader registry: one module per benchmark, registered here.
 
-A loader reads the raw files that A1 recorded under data/raw/<source>/ and yields Items. It must:
+A loader reads the raw files under data/raw/<source>/ (fetched by scripts/fetch_data.py) and
+returns the items that may enter evaluation plus the ones held back, each with a reason. It must:
   - set item_id = f"{source}:{source_id}" and record source_version (revision or sha256);
-  - keep every native label verbatim in native_labels, and nothing else there: review flags go in
-    needs_review, labels we assigned go in annotation;
+  - keep every native label verbatim in native_labels;
   - map labels with harmfloor.taxonomy (never hard-code a family or domain in the loader);
+  - take harmful / benign / domain from harmfloor.data.annotations where the source's own labels
+    do not fit, holding anything unreviewed;
   - set intent_id = item_id; cross-benchmark dedupe assigns the shared clusters later.
 """
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterator
+from collections.abc import Callable
+from dataclasses import dataclass, field
 from pathlib import Path
+import logging
 
 from harmfloor.schema import Item
 
-Loader = Callable[[Path], Iterator[Item]]
+RAW_ROOT = Path(__file__).resolve().parents[2] / "data" / "raw"
+
+
+@dataclass(frozen=True)
+class Held:
+    source_id: str
+    reason: str
+
+
+@dataclass
+class LoadResult:
+    items: list[Item] = field(default_factory=list)
+    held: list[Held] = field(default_factory=list)
+    excluded: list[Held] = field(default_factory=list)
+
+    @property
+    def coverage(self) -> dict[str, int]:
+        benign = sum(i.is_benign for i in self.items)
+        return {"harmful": len(self.items) - benign, "benign": benign,
+                "held": len(self.held), "excluded": len(self.excluded)}
+
+    def report(self, source: str) -> "LoadResult":
+        logger = logging.getLogger(__name__)
+        (logger.warning if self.held else logger.info)("%s: %s", source, self.coverage)
+        return self
+
+
+Loader = Callable[[Path], LoadResult]
 LOADERS: dict[str, Loader] = {}
 
 
@@ -29,7 +60,9 @@ def register(source: str) -> Callable[[Loader], Loader]:
     return deco
 
 
-def load(source: str, raw_root: Path = Path("data/raw")) -> Iterator[Item]:
+def load(source: str, raw_root: Path = RAW_ROOT) -> LoadResult:
+    from harmfloor.data import jbb, safedialbench, utility  # noqa: F401  (registers the loaders)
+
     if source not in LOADERS:
         raise KeyError(f"no loader registered for {source!r}")
-    yield from LOADERS[source](raw_root / source)
+    return LOADERS[source](raw_root / source)

@@ -15,9 +15,9 @@ def test_lookups():
     assert t.attack_family("harmbench", "anything").value == "direct"
     assert t.attack_family("sok_guardrails", "ActorAttack").value == "multi_turn"
     assert t.attack_family("neurips_curated_cyber", "curated_cyber").value == "human_based"
-    assert t.attack_family("safedialbench", "Purpose Reverse").value == "multi_turn"  # approved
-    assert not t.attack_family("safedialbench", "Purpose Reverse").needs_review
-    assert t.strategy_tag("safedialbench", "Purpose Reverse").needs_review is False  # approved
+    assert t.attack_family("safedialbench", "Purpose Reverse").value == "multi_turn"
+    assert t.attack_family("safedialbench", "Purpose Reverse").needs_review
+    assert t.strategy_tag("safedialbench", "Purpose Reverse").needs_review
     assert t.strategy_tag("safedialbench", "Topic Change").needs_review  # marked for review
     assert t.harm_domain("multibreak", "ChemBio").value == "cbrn"
     assert set(t.harm_domains()) == set(t.load()["harm_domains"])
