@@ -1,0 +1,59 @@
+{
+  "date": "2026-10-27",
+  "source": "safedialbench",
+  "source_sha256": "a5429b6477ab7d3f6e47da55e0a9c889bbbba7575dd2ba7e1672379a412bc988",
+  "returned_sheet_sha256": "3ab4fb32c51b8617fd9f5727be941461299c48545a14102efc171acc448bd8c8",
+  "returned_manifest_sha256": "ae1e3f6338ad4cc767be139dd98aa429037fed889e744b98f53ce6ab58c25c76",
+  "approved_snapshot_sha256": "434cf4dec83af259c70145c89825caf327f99417acbbe54c6231ab3c7bb2c4af",
+  "accepted_ids": [
+    "1",
+    "2",
+    "3",
+    "4",
+    "5",
+    "12",
+    "16",
+    "25",
+    "26",
+    "28",
+    "40",
+    "41",
+    "49",
+    "89",
+    "102",
+    "103",
+    "254",
+    "645",
+    "834",
+    "851"
+  ],
+  "confirmation_question": "Should I adopt all 20 decisions in the returned Claude sheet, including 834 as harmful and the nine previously held cases as harmful?",
+  "user_confirmation": "yes, as of now",
+  "scope": "Adopt all returned decisions as the current labels, subject to later revisions",
+  "human_verification": "User reports two human reviewers checked and broadly agreed; their identities and separate first-pass labels were not supplied",
+  "drafting_provenance": "claude-opus-5.5 (AI, not human), as reported in the returned sheet",
+  "independent_human_agreement_measured": false,
+  "ai_verdict_kappa": 0.8428571428571427,
+  "ai_paired_n": 11,
+  "pre_reconciliation_report_sha256": "d588b71e5d9eff8ef6914e9aa37306b71cf87bb196954d7e5f909dda7666d36c",
+  "preserved_fields": [
+    "verdict",
+    "harm_domain",
+    "intent",
+    "reason"
+  ],
+  "known_follow_up": {
+    "851": "Returned intent describes a question; source final turn is a critical statement. Preserved as supplied; wording review remains open."
+  },
+  "coverage": {
+    "harmful": 14,
+    "benign": 5,
+    "held": 2017,
+    "excluded": 1
+  },
+  "evaluation_sets": {
+    "harmful": 14,
+    "separate_over_refusal": 5,
+    "main_fpr": 0
+  }
+}

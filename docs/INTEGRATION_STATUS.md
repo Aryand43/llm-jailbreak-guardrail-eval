@@ -1,5 +1,9 @@
 # Integration handoff — 2026-10-26
 
+**Update 2026-10-28:** All 100 selected annotation-pilot decisions are recorded: 76 harmful, 23 separate over-refusal and 1 excluded. The [accepted case-review outcome](PILOT_CASE_REVIEW_2026-10-28.md#accepted-outcome--2026-10-28) supersedes the historical data-state table below. Independent first-pass agreement remains unmeasured, five rubric boundary groups remain documented, and paid generation remains funding-dependent. No PR or paid run has been performed.
+
+**Update 2026-10-27:** Aryan approved D7–D12. The 26 October baseline below is historical; its pending-decision list and model availability have been superseded by [the pilot review report](PILOT_REVIEW_2026-10-27.md) and METHODOLOGY §10. The paid pilot remains funding-dependent; PR into main follows the annotation pilot.
+
 Working branch: **`aniket`**. Implementation owner: **Aniket**. Supervisor and protocol approval owner: **Aryan**.
 
 This integration is prepared on `aniket` for supervisor review; it is not a merge into `main` or a release. Relevant loader, worksheet, utility and OpenRouter code from Aryan's branch has been incorporated and hardened while retaining Aniket's validation safeguards. `main` was not changed. The handoff document and implementation travel together in the integration commit; local review materials remain separate as described below.

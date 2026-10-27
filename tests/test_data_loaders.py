@@ -116,10 +116,9 @@ def test_safe_reference_and_provisional_gate(data_case):
     assert "FINAL BOT MUST NOT LEAK" not in item.model_dump_json()
     assert item.provisional_tags == ["role_scene"] and not item.strategy_tags
     with pytest.raises(ValueError): evaluation_pool([item])
-    with pytest.raises(ValueError): evaluation_pool([item], allow_provisional_strategies=True)
-    approved_family = item.model_copy(update={"needs_review": ["strategy_tags"]})
-    with pytest.raises(ValueError): evaluation_pool([approved_family])
-    assert evaluation_pool([approved_family], allow_provisional_strategies=True)
+    assert evaluation_pool([item], allow_provisional_strategies=True) == [item]
+    unreviewed_family = item.model_copy(update={"needs_review": ["attack_family", "strategy_tags"]})
+    with pytest.raises(ValueError): evaluation_pool([unreviewed_family], allow_provisional_strategies=True)
 
 
 @pytest.mark.parametrize("verdict", ["benign", "excluded"])

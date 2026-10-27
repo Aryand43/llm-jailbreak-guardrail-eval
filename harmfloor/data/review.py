@@ -43,7 +43,8 @@ def read_drafts(source: str, root: Path = ANNOTATIONS_DIR) -> dict[str, dict]:
 
 
 def export_worksheet(source: str, raw_file: Path, out: Path, root: Path = ANNOTATIONS_DIR,
-                     ids: list[str] | None = None, blind: bool = False) -> int:
+                     ids: list[str] | None = None, blind: bool = False,
+                     sampling: dict | None = None) -> int:
     """Export immutable reference context plus editable labels and a source-bound manifest.
 
     Existing worksheets are never overwritten. Choose a new output name for another round.
@@ -79,6 +80,8 @@ def export_worksheet(source: str, raw_file: Path, out: Path, root: Path = ANNOTA
     manifest = {"format": 1, "source": source, "source_sha256": sha, "ids": selected,
                 "blind": blind, "drafted_by": authors, "fields": fields,
                 "context_sha256": {sid: hashlib.sha256(ctx[sid].encode()).hexdigest() for sid in selected}}
+    if sampling is not None:
+        manifest["sampling"] = sampling
     atomic_write(meta_path, json.dumps(manifest, indent=2) + "\n")
     atomic_write(out, stream.getvalue())
     return len(selected)
@@ -171,19 +174,28 @@ def import_worksheet(source: str, worksheet: Path, raw_file: Path,
     return len(good), []
 
 
-def blind_sample(ids_by_stratum: dict[str, list[str]], n: int, seed: int = 0) -> list[str]:
+def blind_sample(ids_by_stratum: dict[str, list[str]], n: int, seed: int = 0,
+                 required_ids: list[str] | None = None) -> list[str]:
     if n <= 0:
         raise ValueError("sample size must be positive")
     all_ids = [sid for ids in ids_by_stratum.values() for sid in ids]
     if len(all_ids) != len(set(all_ids)):
         raise ValueError("sampling strata contain duplicate IDs")
+    required = list(required_ids or [])
+    if len(required) != len(set(required)) or set(required) - set(all_ids):
+        raise ValueError("required IDs must be unique and present in sampling strata")
+    if len(required) > n:
+        raise ValueError("required IDs exceed requested sample size")
     rng = random.Random(seed)
-    pools = {k: rng.sample(v, len(v)) for k, v in sorted(ids_by_stratum.items())}
-    out = []
+    pools = {k: rng.sample([sid for sid in v if sid not in required],
+                           len([sid for sid in v if sid not in required]))
+             for k, v in sorted(ids_by_stratum.items())}
+    counts = {k: sum(sid in required for sid in v) for k, v in ids_by_stratum.items()}
+    out = required.copy()
     while len(out) < n and any(pools.values()):
-        for pool in pools.values():
-            if pool and len(out) < n:
-                out.append(pool.pop())
+        key = min((k for k in pools if pools[k]), key=lambda k: (counts[k], k))
+        out.append(pools[key].pop())
+        counts[key] += 1
     return out
 
 

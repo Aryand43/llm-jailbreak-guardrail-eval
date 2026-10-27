@@ -1,6 +1,6 @@
 # Dataset loaders
 
-Implementation lives on `aniket`; Aryan is the supervisor and protocol approval owner. See [ANNOTATION.md](ANNOTATION.md) for review instructions and [INTEGRATION_STATUS.md](INTEGRATION_STATUS.md) for the handoff. Implemented validation does not constitute approval of the proposed labelling rules.
+Implementation lives on `aniket`; Aryan is the supervisor and protocol approval owner. D7–D12 were approved on 2026-10-27. See [ANNOTATION.md](ANNOTATION.md) for review instructions and [PILOT_REVIEW_2026-10-27.md](PILOT_REVIEW_2026-10-27.md) for current pilot status. Approval of the rubric is separate from human approval of individual labels.
 
 ## Acquire and load
 
@@ -52,7 +52,7 @@ JBB uses the CSV's numeric `Index` as `source_id`, and `Goal` as intent and user
 
 SafeDialBench retains native `task`, `method`, `model_type`, `scene` and `id`. The native spelling `Scence Construct` remains in native labels and has an explicit taxonomy alias. Every raw dialogue's method mapping is checked, even while held. `model_type` is not treated as the attacked target model.
 
-SafeDialBench `turns` contains **user turns only**. In accordance with METHODOLOGY §7, the future runner must generate intervening assistant turns from the target and sample the final response. `reference_turns` contains the source's earlier assistant responses for annotation and audit; it must not be passed as target-generated history. Neither field includes the stored final bot response. This loader does not implement the experiment runner. Aryan must resolve how context-dependent annotations are checked when regenerated target history changes the request's meaning.
+SafeDialBench `turns` contains **user turns only**. In accordance with METHODOLOGY §7, the future runner must generate intervening assistant turns from the target and sample the final response. `reference_turns` contains the source's earlier assistant responses for annotation and audit; it must not be passed as target-generated history. Neither field includes the stored final bot response. This loader does not implement the experiment runner. Under D10, label on source context; the runner must flag and exclude final questions that stop making sense with target replies and report the exclusion rate over attempted dialogues.
 
 Dialogue 645 contains a blank user turn. It may remain held or be explicitly excluded by a reviewer; including it raises an error. The loader never silently edits the source dialogue. Blank earlier assistant turns also prevent inclusion.
 
@@ -60,9 +60,11 @@ Dialogue 645 contains a blank user turn. It may remain held or be explicitly exc
 
 `evaluation_pool(items)` rejects open `attack_family`, `harm_domain` **and** `strategy_tags` flags by default. It also treats populated `provisional_tags` as an unresolved strategy mapping. Proposed strategies stay separate from approved `strategy_tags`.
 
-`allow_provisional_strategies=True` can admit unresolved secondary tags, but never unresolved family/domain mappings. Use that option only after Aryan records the policy decision in METHODOLOGY §10. All seven SafeDialBench family and strategy mappings currently remain proposals. An item-level annotation does not approve a taxonomy mapping.
+`allow_provisional_strategies=True` admits unresolved secondary tags, but never unresolved family/domain mappings. D9 authorizes this for family-level analysis only. All seven SafeDialBench families and Purpose Reverse -> logical_exploit are approved; the six other strategy mappings remain flagged. No strategy-level claims are authorized yet. An item-level annotation does not approve a taxonomy mapping.
 
-Review mappings on the methodology's sample, record the decision, clear only approved `review: true` entries, then reload in a fresh process (or clear `taxonomy.load`'s cache). Utility loaders pass the current gate; JBB and SafeDialBench currently emit nothing because no human-reviewed annotation file has been created.
+`family_evaluation_sets(items, benign_per_source=300, seed=0)` applies the approved family-level exception and returns `harmful`, `fpr_calibration`, `over_refusal` and `sampling_counts`. Benign SafeDialBench items go exclusively into `over_refusal`. Other benign sources are sampled without replacement up to `min(requested, available)`, recording all three counts; XSTest is capped at 250. Source ordering and input ordering do not change the selected set for a fixed seed. Use this helper when assembling family-level evaluations instead of combining all benign items into calibration.
+
+Review mappings on the methodology's sample, record the decision, clear only approved `review: true` entries, then reload in a fresh process (or clear `taxonomy.load`'s cache). Following user acceptance through 2026-10-28, JBB emits the selected 50 harmful pilot items and holds the other 50. SafeDialBench emits 23 harmful and 14 benign Items, excludes 645 and holds 1,999 dialogues. Benign SafeDialBench is routed to the separate over-refusal set. See the pilot report for acceptance and verification provenance; unresolved drafts do not emit.
 
 ## Migration from the old format
 

@@ -64,14 +64,14 @@ attack_crosswalk:
     X-Teaming: multi_turn
   neurips_curated_cyber:
     curated_cyber: human_based  # educational / role-play framing, hand-written
-  safedialbench:  # proposals pending Aryan's recorded approval
-    Reference Attack: {family: multi_turn, review: true}
-    Scene Construct: {family: multi_turn, review: true}  # alias of native Scence Construct
-    Probing Question: {family: multi_turn, review: true}
-    Topic Change: {family: multi_turn, review: true}
-    Purpose Reverse: {family: multi_turn, review: true}
-    Role Play: {family: multi_turn, review: true}
-    Fallacy Attack: {family: multi_turn, review: true}
+  safedialbench:  # Aryan approved all seven families, 2026-10-27 (D9)
+    Reference Attack: {family: multi_turn, review: false}
+    Scene Construct: {family: multi_turn, review: false}  # alias of native Scence Construct
+    Probing Question: {family: multi_turn, review: false}
+    Topic Change: {family: multi_turn, review: false}
+    Purpose Reverse: {family: multi_turn, review: false}
+    Role Play: {family: multi_turn, review: false}
+    Fallacy Attack: {family: multi_turn, review: false}
   direct_sources: [jbb_behaviors, harmbench, strongreject, pku_saferlhf, or_bench, xstest]
 
 # multi-turn strategies -> shared strategy tags (secondary axis inside `multi_turn`)
@@ -84,8 +84,8 @@ strategy_crosswalk:
     Framing, Authority and Emotional Pressure: framing_pressure
     Logical Exploits: logical_exploit
     Injection and Mandates: injection
-  safedialbench:  # provisional tags stay separate; strict evaluation gate until Aryan approves policy
-    Purpose Reverse: {tag: logical_exploit, review: true}
+  safedialbench:  # D9: provisional tags allowed for family-level analysis only
+    Purpose Reverse: {tag: logical_exploit, review: false}  # Aryan, 2026-10-27
     Scene Construct: {tag: role_scene, review: true}  # native spelling remains in native_labels
     Role Play: {tag: role_scene, review: true}  # some items are first-person story, no role assigned
     Topic Change: {tag: escalation, review: true}  # some items stay on one subject
@@ -96,7 +96,7 @@ strategy_crosswalk:
 # native harm label -> harm domain, per source.
 # jbb_behaviors and safedialbench are NOT here: their categories mix domains / ship no detailed
 # labels, so each item's harm_domain is reviewed directly in its annotation file, not mapped from
-# a native label. This is the implementation proposal, not protocol approval by Aryan.
+# a native label. Aryan approved per-item requested-harm labelling on 2026-10-27 (D7).
 # See harmfloor/data/annotations.py and docs/ANNOTATION.md.
 harm_crosswalk:
   jailbreakradar:

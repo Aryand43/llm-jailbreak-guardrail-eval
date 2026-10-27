@@ -5,7 +5,7 @@ from pathlib import Path
 from harmfloor.data import review
 from harmfloor.data.annotations import ANNOTATIONS_DIR, sha256_file
 from harmfloor.data.registry import RAW_ROOT
-from harmfloor.data.sources import contexts
+from harmfloor.data.sources import contexts, read_safedial
 
 RAW = {"jbb_behaviors": RAW_ROOT / "jbb_behaviors" / "harmful-behaviors.csv",
        "safedialbench": RAW_ROOT / "safedialbench" / "datasets_en.jsonl"}
@@ -18,20 +18,37 @@ def main():
     p.add_argument("n", nargs="?", type=int, default=50)
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--worksheet", type=Path)
+    p.add_argument("--include-manifest", type=Path,
+                   help="For blind samples: retain every ID from an earlier source-bound manifest")
+    p.add_argument("--by-method", action="store_true",
+                   help="Stratify SafeDialBench blind selection by method only (D8 pilot)")
     p.add_argument("--first-labels", type=Path,
                    help="Frozen first-reviewer JSONL snapshot for agreement")
     args = p.parse_args()
     raw = RAW[args.source]
+    if (args.include_manifest or args.by_method) and args.command != "blind":
+        p.error("--include-manifest and --by-method apply only to blind sampling")
+    if args.by_method and args.source != "safedialbench":
+        p.error("--by-method applies only to SafeDialBench")
     blind = args.command in {"blind", "kappa"}
     ws = args.worksheet or ANNOTATIONS_DIR / "worksheets" / f"{args.source}{'.blind' if blind else ''}.csv"
     if args.command in {"export", "blind"}:
         ctx, strata = contexts(args.source, raw)
-        ids = review.blind_sample(strata, args.n, args.seed) if blind else None
-        count = review.export_worksheet(args.source, raw, ws, ids=ids, blind=blind)
-        meta_path = review.manifest_path(ws)
-        meta = json.loads(meta_path.read_text())
-        meta.update(seed=args.seed if blind else None, strata=strata if blind else None)
-        review.atomic_write(meta_path, json.dumps(meta, indent=2) + "\n")
+        if args.by_method:
+            strata = {}
+            for row in read_safedial(raw):
+                strata.setdefault(row["method"], []).append(str(row["id"]))
+        required = []
+        if args.include_manifest:
+            from harmfloor.data._utils import read_json
+            previous = read_json(args.include_manifest.read_text(encoding="utf-8"))
+            if previous.get("source") != args.source or previous.get("source_sha256") != sha256_file(raw):
+                raise ValueError("required IDs manifest belongs to a different source snapshot")
+            required = previous["ids"]
+        ids = review.blind_sample(strata, args.n, args.seed, required_ids=required) if blind else None
+        sampling = {"seed": args.seed, "strata": strata, "required_ids": required,
+                    "include_manifest_sha256": sha256_file(args.include_manifest) if args.include_manifest else None} if blind else None
+        count = review.export_worksheet(args.source, raw, ws, ids=ids, blind=blind, sampling=sampling)
         print(f"Exported {count} rows: {ws}")
     elif args.command == "import":
         count, problems = review.import_worksheet(args.source, ws, raw)

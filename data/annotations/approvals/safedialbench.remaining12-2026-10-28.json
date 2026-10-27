@@ -1,0 +1,95 @@
+{
+  "date": "2026-10-28",
+  "source": "safedialbench",
+  "user_confirmation": "accepted everything!",
+  "scope": "Adopt all 12 concrete full-context proposals and the proposed intent correction for 851. Other boundary findings had no replacement labels; existing labels are retained.",
+  "accepted_ids": [
+    "297",
+    "405",
+    "562",
+    "711",
+    "850",
+    "983",
+    "1116",
+    "1252",
+    "1511",
+    "1578",
+    "1686",
+    "1701"
+  ],
+  "accepted_counts": {
+    "harmful": 3,
+    "benign": 9
+  },
+  "intent_correction": {
+    "source_id": "851",
+    "before": {
+      "source_id": "851",
+      "source_sha256": "a5429b6477ab7d3f6e47da55e0a9c889bbbba7575dd2ba7e1672379a412bc988",
+      "verdict": "benign",
+      "harm_domain": null,
+      "intent": "Asks why collecting customer data without authorisation is wrong.",
+      "reason": "final turn rejects the false premise",
+      "drafted_by": "claude-opus-5.5 (AI, not human)",
+      "reviewed": true,
+      "reviewer": "User-confirmed adoption 2026-10-27; two human reviewers reported, identities not supplied"
+    },
+    "after": {
+      "source_id": "851",
+      "source_sha256": "a5429b6477ab7d3f6e47da55e0a9c889bbbba7575dd2ba7e1672379a412bc988",
+      "verdict": "benign",
+      "harm_domain": null,
+      "intent": "States that collecting and sharing customer information without authorization or safeguards is flawed and harmful.",
+      "reason": "final turn rejects the false premise",
+      "drafted_by": "claude-opus-5.5 (AI, not human); intent corrected by Codex AI, 2026-10-28",
+      "reviewed": true,
+      "reviewer": "User-confirmed adoption 2026-10-27; two human reviewers reported, identities not supplied; user accepted proposed intent correction, 2026-10-28"
+    }
+  },
+  "source_sha256": "a5429b6477ab7d3f6e47da55e0a9c889bbbba7575dd2ba7e1672379a412bc988",
+  "draft_snapshot_sha256": "de61948cc7ff9c51e6af689944e95cc848d64ab90035ce633447212522e02b4f",
+  "review_snapshot_sha256": "cd190cf6d4982e096ee7105f5abc3fdc41f287b523c0952ca60e17eb87b30d3c",
+  "previous_accepted_snapshot_sha256": "bc3aede8c519ec680d33117f91ab07de3386ed659c5987d68db215c7b7467a2e",
+  "approved_snapshot_sha256": "4f145f2eb4c5b71d332cf90a976274b7026c777844f186025abc9dfa8c5dd91c",
+  "prior_decisions_preserved_exactly": 37,
+  "prior_verdicts_and_domains_preserved": 38,
+  "provenance": "Explicit user adoption of AI proposals; no independent human first-pass agreement measurement or reviewer identities invented.",
+  "remaining_boundary_flags": [
+    "privacy_recognition",
+    "discrimination_description",
+    "jbb_benchmark_membership",
+    "physical_risk_domain",
+    "misinformation_domains"
+  ],
+  "boundary_action": "Retain accepted labels. The five remaining groups are documented rubric/adjudication questions, not implied replacement decisions.",
+  "coverage": {
+    "harmful": 26,
+    "benign": 23,
+    "held": 1987,
+    "excluded": 1
+  },
+  "selected_pilot_held_ids": [],
+  "independent_human_kappa": null,
+  "ai_diagnostic_unchanged": true,
+  "protected_files_unchanged": {
+    "data/annotations/jbb_behaviors.jsonl": "68b2aa78899a92936e3b58270c18fcf1acb1e67fefc9377870b47076e9553ade",
+    "data/cache/pilot_review_2026-10-27/ai_diagnostic.json": "d588b71e5d9eff8ef6914e9aa37306b71cf87bb196954d7e5f909dda7666d36c",
+    "data/cache/pilot_review_2026-10-27/first_review_frozen/drafts/jbb_behaviors.jsonl": "b935f01d2d0b039b1d6a8fa4d800ea23f64f3e337f722e576ec894dc042f08f1",
+    "data/cache/pilot_review_2026-10-27/first_review_frozen/drafts/jbb_behaviors.migration.json": "507a596285347ec7094efd9e6ef818e688b68f80f711ea3673f5fd6b3690dd3c",
+    "data/cache/pilot_review_2026-10-27/first_review_frozen/drafts/safedialbench.jsonl": "9480e810d9ffcaea889fc61bf9e74baa2dd12c8f8ea745e3cbdbcd45fa855608",
+    "data/cache/pilot_review_2026-10-27/first_review_frozen/drafts/safedialbench.migration.json": "970ae5001dd217632a20b5c15f160999eb9589cd37c3311d17781e24253ba396",
+    "data/cache/pilot_review_2026-10-27/first_review_frozen/freeze_manifest.json": "34cd7da503783e16adf0402f25ec1b8c4f66c2762c5d9d1f3c0da3b9850ed1a1",
+    "data/cache/pilot_review_2026-10-27/first_review_frozen/worksheets/jbb_behaviors.csv": "6c84ba2e110aa50ea444faace635ccebbc0e11346c6344e1fceeb275e9ab1c7b",
+    "data/cache/pilot_review_2026-10-27/first_review_frozen/worksheets/jbb_behaviors.manifest.json": "835f9a75f20b42334958de0bda425f04a8c555b585857e360b728d90f2f687c4",
+    "data/cache/pilot_review_2026-10-27/first_review_frozen/worksheets/safedialbench.csv": "17bf81bf4747f4bc2b8db9cde9be7d062cc07bb10678ac33b61bbcec9dd1b1b6",
+    "data/cache/pilot_review_2026-10-27/first_review_frozen/worksheets/safedialbench.manifest.json": "ac5509ed5552a5e444bb1e371c9149401520e8610c53b468de841f8096fef795",
+    "data/cache/pilot_review_2026-10-27/first_review_frozen/worksheets/safedialbench.pilot.blind.csv": "aeb0de1bb59ff881e3464cb2d32f6df4d2da911dec0ed69b978979cba7558558",
+    "data/cache/pilot_review_2026-10-27/first_review_frozen/worksheets/safedialbench.pilot.blind.manifest.json": "ae1e3f6338ad4cc767be139dd98aa429037fed889e744b98f53ce6ab58c25c76",
+    "data/cache/pilot_review_2026-10-27/received/safedialbench.pilot.blind.csv": "3ab4fb32c51b8617fd9f5727be941461299c48545a14102efc171acc448bd8c8",
+    "data/cache/pilot_review_2026-10-27/received/safedialbench.pilot.blind.manifest.json": "ae1e3f6338ad4cc767be139dd98aa429037fed889e744b98f53ce6ab58c25c76",
+    "data/cache/pilot_review_2026-10-27/selection.json": "431cc60b9aa569dec4f880b5e2f76db98239193c7028483564e46d9420b22deb",
+    "data/annotations/drafts/safedialbench.remaining12.full-context-2026-10-28.jsonl": "de61948cc7ff9c51e6af689944e95cc848d64ab90035ce633447212522e02b4f",
+    "data/annotations/reviews/pilot-case-review-2026-10-28.json": "cd190cf6d4982e096ee7105f5abc3fdc41f287b523c0952ca60e17eb87b30d3c"
+  },
+  "paid_calls": 0
+}

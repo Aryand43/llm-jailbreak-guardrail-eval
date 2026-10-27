@@ -7,7 +7,10 @@ Start with [docs/METHODOLOGY.md](docs/METHODOLOGY.md).
 Integration is being prepared on `aniket`, with Aryan as supervisor. See the
 [handoff and remaining decisions](docs/INTEGRATION_STATUS.md),
 [loader API](docs/DATA_LOADERS.md), and [annotation workflow](docs/ANNOTATION.md).
-Draft labels and implemented checks do not constitute protocol approval.
+Aryan approved the pilot protocol on 2026-10-27. See the
+[accepted pilot decisions](docs/PILOT_CASE_REVIEW_2026-10-28.md) for the current
+100-case selection: 76 harmful, 23 separate over-refusal and 1 excluded.
+The report records validation results, remaining rubric questions and experiment prerequisites.
 
 ## Setup
 

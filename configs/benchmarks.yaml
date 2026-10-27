@@ -54,10 +54,10 @@ core:  # the four papers the revision is built on
       - https://huggingface.co/datasets/HongyeCao/SafeDialBench/tree/main
       - https://huggingface.co/datasets/HongyeCao/SafeDialBench/raw/main/README.md
       - https://www.apache.org/licenses/LICENSE-2.0
-    note: "Use English split; do not reuse upstream scores. The 2,037-row release needs per-item reviewed decisions in data/annotations/safedialbench.jsonl. Labelling rules and benign FPR eligibility remain pending Aryan approval; no reviewed items currently emit. User-only turns support target-history regeneration; reference_turns preserve source context for review. Dialogue 645 has a blank user turn and must remain held or be explicitly excluded. See docs/DATA_LOADERS.md."
+    note: "English split; do not reuse upstream scores. Through 2026-10-28 the user accepted 38 decisions: 23 harmful and 14 benign emitted, 645 excluded, 1,999 held. AI drafting, reported verification and user adoption are recorded separately; independent human agreement was not measured. Benign dialogues form a separate over-refusal set, never main FPR calibration. Label on source context; flag/exclude incoherent target histories and report the rate. See docs/PILOT_REVIEW_2026-10-27.md."
     source_revision: 0d27436754b80c28d40c3748ede8e498405a63a8
     source_sha256: a5429b6477ab7d3f6e47da55e0a9c889bbbba7575dd2ba7e1672379a412bc988
-    status: sourced
+    status: loaded
   multibreak:
     paper: "Song et al., MultiBreak (arXiv 2605.01687, ICML 2026)"
     provides: "10,389 multi-turn prompts, 2,665 intents, 2-6 turns, 7 attack categories, 26 safety categories"
@@ -89,10 +89,10 @@ prompts:  # additional sources pulled in through SoK / standard practice
       - https://github.com/JailbreakBench/jailbreakbench/blob/main/LICENSE
       - https://github.com/JailbreakBench/artifacts/blob/main/README.md
       - https://github.com/JailbreakBench/artifacts/blob/main/LICENSE
-    note: "Loader covers the 100 harmful behaviors, not attack artifacts or the benign split. Per-item decisions use data/annotations/jbb_behaviors.jsonl with numeric Index IDs. Original Behavior IDs remain in native_labels. Labelling rules remain pending Aryan approval; no reviewed items currently emit. See docs/DATA_LOADERS.md."
+    note: "Loader covers the 100 harmful behaviors, not attack artifacts or the benign split. On 2026-10-27 the user accepted the existing drafts for the selected 50-item pilot; those emit as harmful and the other 50 remain held. Numeric Index IDs identify annotations; original Behavior IDs remain native labels. AI provenance, blanket acceptance and legacy CHECK notes are preserved; independent per-item human agreement was not measured. See docs/PILOT_REVIEW_2026-10-27.md."
     source_revision: 886acc352a31533ffbcf4ef22c744658688086fc
     source_sha256: 4a8ec6832056b631eb092dccc60d37a61c3d441268268888b3d006288afeffa1
-    status: sourced
+    status: loaded
   jailbreakhub_ijp:
     provides: "in-the-wild jailbreak prompts (SoK samples 1,000)"
     url: https://huggingface.co/datasets/TrustAIRLab/in-the-wild-jailbreak-prompts

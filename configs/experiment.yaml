@@ -6,16 +6,35 @@ models:  # open-weight via OpenRouter (we need n samples, fixed decoding and, fo
   # Never use ':free' variants for experiments (rate limits, provider logging).
   neurips_continuity:
     - meta-llama/llama-3.2-3b-instruct
-    - nvidia/llama-3.1-nemotron-70b-instruct    # Absent from catalogue 2026-10-26; Aryan to decide replacement/drop
-    - nvidia/llama-3.1-nemotron-ultra-253b-v1   # Absent from catalogue 2026-10-26; Aryan to decide replacement/drop
+    - nvidia/nemotron-3-super-120b-a12b  # Aryan-approved replacement, 2026-10-27; different model/scale
+    # Nemotron Ultra deferred under D11 (not part of the active grid).
   benchmark_overlap:  # models the four papers also report, so our ceilings can be sanity-checked
     - meta-llama/llama-3.1-8b-instruct   # SoK main target, MultiBreak, SafeDialBench
-    - qwen/qwen3-8b                      # MultiBreak; absent 2026-10-26; Aryan to decide
-    - deepseek/deepseek-r1-distill-qwen-7b  # MultiBreak; absent 2026-10-26; Aryan to decide
+    - qwen/qwen3-14b                    # Aryan-approved replacement, 2026-10-27; no exact 8B continuity
+    # DeepSeek distill dropped under D11.
   scale_and_family:
     - meta-llama/llama-3.3-70b-instruct
     - google/gemma-3-27b-it
     - openai/gpt-oss-120b
+
+pilot:
+  model: meta-llama/llama-3.1-8b-instruct
+  budget_usd: 50
+  funding_confirmed: false  # Awaiting Prof; no paid generation until confirmed.
+  provider: null           # Must be pinned and checked before generation.
+
+annotation_pilot:
+  sample_per_source: {jbb_behaviors: 50, safedialbench: 50}
+  safedialbench_include_original_pilot: true
+  seed: 0
+  verdict_kappa_target: 0.7
+  adjudicator: Aryan
+  label_context: source_dialogue
+
+analysis:
+  level: attack_family
+  allow_provisional_strategies: true  # D9: family level only; no strategy-level claims yet.
+  safedialbench_benign: separate_over_refusal
 
 decoding: {temperature: 0.7, top_p: 0.95, max_tokens: 512, seed: 42}  # same as NeurIPS
 
@@ -23,12 +42,14 @@ pool:
   n: 64                 # samples per (item, model); best-of-q for every q <= n is computed from the pool
   n_validation: 256     # larger pool on a 10% subset, to test floor extrapolation (H2)
   multi_turn: "replay user turns; earlier assistant turns greedy (T=0) from the target; pool only the final turn"
+  context_validity: "flag and exclude final questions that no longer make sense with target replies; report exclusion count and rate over attempted dialogues"
 
 budgets: [1, 2, 4, 8, 16, 32, 64]   # q = 0 (one unfiltered sample) is the ceiling U
 
 sampling:  # stratified evaluation set drawn from the aggregate
   per_cell: 100          # items per (attack_family) row, balanced over harm_domain where possible
-  benign_per_source: 300 # utility items for FPR calibration
+  benign_per_source: 300 # requested; actual = min(300, available), without replacement
+  cap_benign_at_available: true
   dedupe: "intent_id clusters; at most 3 items per intent per family"
 
 utility_constraint:

@@ -133,16 +133,17 @@ def test_safedialbench_turns_and_tags(sdb_raw, tmp_path):
     assert item.attack_method == "Scene Construct"
     assert item.native_labels["method"] == "Scence Construct"  # source typo kept verbatim
     assert item.strategy_tags == [] and item.provisional_tags == ["role_scene"]
-    assert item.needs_review == ["attack_family", "strategy_tags"]
+    assert item.needs_review == ["strategy_tags"]
 
 
-def test_provisional_strategy_tags_are_flagged(sdb_raw, tmp_path):
+def test_approved_purpose_reverse_strategy_is_not_provisional(sdb_raw, tmp_path):
     rows = [dict(SDB_ROWS[0], id=9, method="Purpose Reverse")]
     (sdb_raw / safedialbench.FILENAME).write_text(json.dumps(rows[0]) + "\n")
     sha = sha256_file(sdb_raw / safedialbench.FILENAME)
     root = write_notes(tmp_path, "safedialbench", [note("9", sha, "harmful", harm_domain="cyber", intent="i")])
     (item,) = safedialbench.load(sdb_raw, root).items
-    assert item.strategy_tags == [] and item.provisional_tags == ["logical_exploit"]
+    assert item.strategy_tags == ["logical_exploit"] and item.provisional_tags == []
+    assert item.needs_review == []
 
 
 def test_item_rejects_benign_with_domain_and_missing_user_turn():
