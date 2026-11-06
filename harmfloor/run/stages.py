@@ -90,7 +90,9 @@ def write_items(run: Path, sets: dict[str, list[Item]], info: dict[str, Any]) ->
     return counts
 
 
-def build(run: Path, sources: list[str], benign_per_source: int, seed: int = 0) -> dict[str, int]:
+def build(run: Path, sources: list[str], benign_per_source: int, seed: int = 0,
+          limit: int | None = None) -> dict[str, int]:
+    """limit keeps the first `limit` items of each role (per family for harmful): smoke runs only."""
     from harmfloor.data.pool import family_evaluation_sets
     from harmfloor.data.registry import load
 
@@ -101,9 +103,15 @@ def build(run: Path, sources: list[str], benign_per_source: int, seed: int = 0) 
         items += result.items
         held[source] = result.coverage
     s = family_evaluation_sets(items, benign_per_source=benign_per_source, seed=seed)
-    return write_items(run, {"harmful": s.harmful, "calibration": s.fpr_calibration,
-                             "over_refusal": s.over_refusal},
-                       {"sources": sources, "coverage": held, "benign_sampling": s.sampling_counts})
+    sets = {"harmful": s.harmful, "calibration": s.fpr_calibration, "over_refusal": s.over_refusal}
+    if limit is not None:
+        by_family: dict[str, list[Item]] = defaultdict(list)
+        for it in s.harmful:
+            by_family[it.attack_family].append(it)
+        sets = {"harmful": [it for fam in sorted(by_family) for it in by_family[fam][:limit]],
+                "calibration": s.fpr_calibration[:limit], "over_refusal": s.over_refusal[:limit]}
+    return write_items(run, sets, {"sources": sources, "coverage": held, "benign_sampling": s.sampling_counts,
+                                   "smoke_limit": limit})
 
 
 # --------------------------------------------------------------------------- generate
@@ -201,9 +209,9 @@ def judge(run: Path, backend: Backend, judge_name: str, *, threshold: float = 0.
         for s, gens in zip(batch, outs):
             score = rubric.parse(gens[0].text)
             unreadable += score is None
-            rows.append({**HarmLabel(item_id=s["item_id"], model=s["model"], sample_idx=s["sample_idx"],
-                                     judge=judge_name, harmful=bool(score is not None and score >= threshold),
-                                     score=score).model_dump(), "readable": score is not None})
+            rows.append(HarmLabel(item_id=s["item_id"], model=s["model"], sample_idx=s["sample_idx"],
+                                  judge=judge_name, harmful=None if score is None else score >= threshold,
+                                  score=score).model_dump())
         written += _append(run / "labels.jsonl", rows)
     _record(run, f"judge:{judge_name}", {**backend.info(), "threshold": threshold,
                                          "labels_written": written, "unreadable": unreadable})
@@ -226,11 +234,12 @@ def analyze(run: Path, *, model: str, guard_name: str, judge_name: str, budgets:
     harm: dict[str, dict[int, bool]] = defaultdict(dict)
     unreadable = 0
     for r in _read(run / "labels.jsonl"):
-        if r["judge"] == judge_name and r["model"] == model:
-            if r.get("readable", True):
-                harm[r["item_id"]][r["sample_idx"]] = r["harmful"]
-            else:
+        label = HarmLabel.model_validate(r)
+        if label.judge == judge_name and label.model == model:
+            if label.harmful is None:
                 unreadable += 1
+            else:
+                harm[label.item_id][label.sample_idx] = label.harmful
 
     def pool(item_id: str, with_harm: bool):
         idx = sorted(risk[item_id]) if not with_harm else sorted(set(risk[item_id]) & set(harm[item_id]))

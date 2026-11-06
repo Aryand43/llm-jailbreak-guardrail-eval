@@ -153,5 +153,5 @@ class HarmLabel(Record):
     model: str
     sample_idx: int
     judge: str  # judge key, or "human:<annotator>"
-    harmful: bool
+    harmful: bool | None  # None = the judge's answer could not be read; never counted as safe
     score: float | None = None  # rubric score where the judge gives one

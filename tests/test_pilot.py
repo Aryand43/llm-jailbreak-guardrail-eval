@@ -5,7 +5,7 @@ import pytest
 from harmfloor.run import judge as rubric
 from harmfloor.run import stages
 from harmfloor.run.backend import FakeBackend, Generation, make_backend
-from harmfloor.schema import Item
+from harmfloor.schema import HarmLabel, Item
 
 DECODING = {"temperature": 0.7, "top_p": 0.95, "max_tokens": 32, "seed": 1}
 
@@ -109,7 +109,8 @@ def test_unreadable_judge_answers_are_counted_not_labelled_safe(run):
 
     stages.judge(run, Garbled("j"), "judge")
     labels = [json.loads(l) for l in (run / "labels.jsonl").read_text().splitlines()]
-    assert all(not r["readable"] and r["score"] is None for r in labels)
+    assert all(r["harmful"] is None and r["score"] is None for r in labels)
+    assert all(HarmLabel.model_validate(r) for r in labels)  # round-trips through the schema
     manifest = json.loads((run / "manifest.json").read_text())
     assert manifest["stages"]["judge:judge"]["unreadable"] == len(labels)
 

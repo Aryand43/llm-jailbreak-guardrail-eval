@@ -29,6 +29,7 @@ def main() -> None:
     ap.add_argument("--backend", choices=["vllm", "fake"], default="vllm")
     ap.add_argument("--run-dir", help="overrides run_dir in the config")
     ap.add_argument("--n", type=int, help="override pool size (e.g. 8 for a quick smoke test)")
+    ap.add_argument("--limit", type=int, help="build: keep this many items per role/family (smoke test)")
     a = ap.parse_args()
 
     cfg = yaml.safe_load(Path(a.config).read_text())
@@ -43,7 +44,7 @@ def main() -> None:
     for stage in todo:
         print(f"== {stage}")
         if stage == "build":
-            print(stages.build(run, cfg["sources"], cfg["benign_per_source"]))
+            print(stages.build(run, cfg["sources"], cfg["benign_per_source"], limit=a.limit))
         elif stage == "generate":
             print(stages.generate(run, make_backend(a.backend, target, cfg["vllm"]), n=n,
                                   decoding=cfg["decoding"]), "samples")

@@ -14,9 +14,14 @@ cd "$(dirname "$0")/.."
 python_check='import vllm, torch; assert torch.cuda.is_available(), "no CUDA GPU"; print("vllm", vllm.__version__, "|", torch.cuda.get_device_name(0))'
 uv run python -c "$python_check"
 
-RUN_DIR="${RUN_DIR:-runs/pilot-llama31-8b}"
-[ -f "$RUN_DIR/items.jsonl" ] || uv run python scripts/pilot.py build --run-dir "$RUN_DIR"
-uv run python scripts/pilot.py generate --run-dir "$RUN_DIR"
+# SMOKE=1 runs 5 items per role with 8 samples each (minutes) into runs/smoke. Do this first.
+if [ "${SMOKE:-0}" = "1" ]; then
+  RUN_DIR="${RUN_DIR:-runs/smoke}"; EXTRA=(--n 8); BUILD=(--limit 5)
+else
+  RUN_DIR="${RUN_DIR:-runs/pilot-llama31-8b}"; EXTRA=(); BUILD=()
+fi
+[ -f "$RUN_DIR/items.jsonl" ] || uv run python scripts/pilot.py build --run-dir "$RUN_DIR" "${BUILD[@]}"
+uv run python scripts/pilot.py generate --run-dir "$RUN_DIR" "${EXTRA[@]}"
 uv run python scripts/pilot.py guard    --run-dir "$RUN_DIR"
 uv run python scripts/pilot.py judge    --run-dir "$RUN_DIR"
 uv run python scripts/pilot.py analyze  --run-dir "$RUN_DIR"
