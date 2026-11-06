@@ -44,3 +44,14 @@ uv run python scripts/check_models.py   # which configured models OpenRouter ser
 - Never commit API keys. Put `OPENROUTER_API_KEY` in `.env` (gitignored).
 - Raw datasets go in `data/raw/<source>/` (gitignored); record the source and licence in `configs/benchmarks.yaml`.
 - Map labels only through `harmfloor/taxonomy.py`. If a label has no mapping, add it to `configs/taxonomy.yaml` with `review: true`.
+
+## Pilot run
+
+One target (Llama-3.1-8B-Instruct), one guardrail (Llama Guard 3, best-of-q), a stand-in judge (Qwen2.5-7B-Instruct), on a self-hosted GPU. Config: `configs/pilot.yaml`. Stages and outputs: `harmfloor/run/stages.py`.
+
+```bash
+uv run python scripts/pilot.py all --backend fake --run-dir runs/dry --n 8   # dry run, no GPU
+bash scripts/run_pilot_gpu.sh                                                 # real run, NVIDIA GPU >= 24 GB
+```
+
+Pilot limits: the judge threshold is unvalidated and rates are not judge-error corrected (no human sample yet); multi-turn context-validity checks are not implemented; only the direct and multi-turn families have data.

@@ -88,11 +88,23 @@ def calibrate_tau(benign_risks: Sequence[Sequence[float]], q: int, max_fpr: floa
     harm, so floors are only reported at a matched false-positive rate.
     """
     candidates = np.unique(np.concatenate([np.asarray(r, float) for r in benign_risks]))
-    for tau in candidates:
-        fpr = np.mean([best_of_q_refusal(r, [q], tau)[0] for r in benign_risks])
-        if fpr <= max_fpr:
-            return float(tau)
-    return float(candidates[-1])
+    sorted_risks = [np.sort(np.asarray(r, float)) for r in benign_risks]
+    weights = {len(r): selection_weights(len(r), q) for r in sorted_risks}
+
+    def fpr(tau: float) -> float:
+        return float(np.mean([weights[len(r)] @ (r > tau) for r in sorted_risks]))
+
+    # The refusal rate never increases with tau, so binary-search the smallest passing candidate.
+    if fpr(candidates[-1]) > max_fpr:
+        return float(candidates[-1])
+    lo, hi = 0, len(candidates) - 1
+    while lo < hi:
+        mid = (lo + hi) // 2
+        if fpr(candidates[mid]) <= max_fpr:
+            hi = mid
+        else:
+            lo = mid + 1
+    return float(candidates[lo])
 
 
 def pool_curves(
