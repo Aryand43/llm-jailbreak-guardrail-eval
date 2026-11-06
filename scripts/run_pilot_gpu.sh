@@ -16,6 +16,9 @@ CONFIG="${CONFIG:-configs/pilot.yaml}"   # configs/pilot_12gb.yaml on a 12 GB ca
 command -v cc >/dev/null || { echo "no C compiler: sudo apt install -y build-essential" >&2; exit 1; }
 # `uv pip install vllm` changes pinned packages (e.g. numpy); stop `uv run` from reverting them.
 export UV_NO_SYNC=1
+# FlashInfer's sampler JIT-compiles with nvcc, which WSL/consumer setups lack; vLLM's PyTorch
+# sampler gives the same sampling without it. Override with VLLM_USE_FLASHINFER_SAMPLER=1.
+export VLLM_USE_FLASHINFER_SAMPLER="${VLLM_USE_FLASHINFER_SAMPLER:-0}"
 python_check='import vllm, torch; assert torch.cuda.is_available(), "no CUDA GPU"; print("vllm", vllm.__version__, "|", torch.cuda.get_device_name(0))'
 uv run python -c "$python_check"
 
