@@ -1,0 +1,28 @@
+# Pilot for a 12 GB GPU (e.g. RTX 4070 Ti at the EEE club). Same pipeline as pilot.yaml, smaller models:
+# 4-bit target and judge, Llama Guard 3 1B. Results are a pipeline check, not paper numbers:
+# quantisation changes the target, and the 1B guard is weaker than the 8B one.
+# Run:  CONFIG=configs/pilot_12gb.yaml SMOKE=1 bash scripts/run_pilot_gpu.sh
+run_dir: runs/pilot-12gb
+
+sources: [jbb_behaviors, safedialbench, or_bench, xstest]
+benign_per_source: 300
+
+target: hugging-quants/Meta-Llama-3.1-8B-Instruct-AWQ-INT4   # ~5.5 GB, not gated
+guard:
+  name: bestofq_llamaguard1b
+  model: meta-llama/Llama-Guard-3-1B                         # ~3 GB bf16; gated: accept the licence
+judge:
+  name: pilot_rubric_qwen25_7b_awq
+  model: Qwen/Qwen2.5-7B-Instruct-AWQ                        # ~5 GB, not gated; different family from the guard
+  harmful_threshold: 0.5
+
+n: 64
+decoding: {temperature: 0.7, top_p: 0.95, max_tokens: 512, seed: 42}
+budgets: [1, 2, 4, 8, 16, 32, 64]
+max_fpr: [0.01, 0.05, 0.10]
+n_boot: 1000
+
+vllm:
+  dtype: auto                     # AWQ models pick float16; the guard runs in bf16
+  gpu_memory_utilization: 0.85    # the card also drives the display (~0.7 GB in use)
+  max_model_len: 6144             # multi-turn histories reach a few thousand tokens
