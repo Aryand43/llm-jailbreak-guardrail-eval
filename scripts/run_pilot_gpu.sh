@@ -5,13 +5,17 @@
 # One-time setup on the GPU machine:
 #   1. Accept the licences for meta-llama/Llama-3.1-8B-Instruct and meta-llama/Llama-Guard-3-8B
 #      on huggingface.co, then: export HF_TOKEN=...
-#   2. uv sync && uv pip install vllm
-#   3. uv run python scripts/fetch_data.py
+#   2. sudo apt install -y build-essential   (Triton needs a C compiler to build GPU kernels)
+#   3. uv sync && uv pip install vllm
+#   4. uv run python scripts/fetch_data.py
 set -euo pipefail
 cd "$(dirname "$0")/.."
 CONFIG="${CONFIG:-configs/pilot.yaml}"   # configs/pilot_12gb.yaml on a 12 GB card
 
 : "${HF_TOKEN:?set HF_TOKEN (Hugging Face token with access to the Llama models)}"
+command -v cc >/dev/null || { echo "no C compiler: sudo apt install -y build-essential" >&2; exit 1; }
+# `uv pip install vllm` changes pinned packages (e.g. numpy); stop `uv run` from reverting them.
+export UV_NO_SYNC=1
 python_check='import vllm, torch; assert torch.cuda.is_available(), "no CUDA GPU"; print("vllm", vllm.__version__, "|", torch.cuda.get_device_name(0))'
 uv run python -c "$python_check"
 
