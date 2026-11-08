@@ -49,10 +49,6 @@ def main() -> None:
     ax.set_xlabel("Guardrail budget q (responses the guardrail compares)", color=INK2)
     ax.set_ylabel("Harmful responses (%)", color=INK2)
     ax.legend(frameon=False, loc="upper right")
-    fpr = a.setting.replace("fpr_", "")
-    fig.text(0.01, -0.07, f"Pilot, raw judge rates: Llama-3.1-8B (4-bit), Llama Guard 3 1B best-of-q at {float(fpr):.0%} "
-             f"false positives,\nQwen2.5-7B judge (not yet checked against human labels). Floor = fitted level harm settles at.",
-             fontsize=8.3, color=INK2)
     out = Path(a.out) if a.out else Path(a.results).with_name(f"harm_vs_budget_{a.setting}.png")
     fig.savefig(out, dpi=200, bbox_inches="tight", facecolor="white")
     print(out)
