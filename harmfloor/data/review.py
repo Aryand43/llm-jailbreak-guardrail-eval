@@ -152,6 +152,8 @@ def import_worksheet(source: str, worksheet: Path, raw_file: Path,
             raw = raw_rows[sid]
             if source == "jbb_behaviors" and a.intent is not None and a.intent != raw["Goal"]:
                 raise ValueError("JBB intent must equal the source Goal (or be left empty)")
+            if source == "multijail" and a.intent is not None and a.intent != raw["en"]:
+                raise ValueError("MultiJail intent must equal the English prompt (or be left empty)")
             if source == "safedialbench" and a.verdict != "excluded":
                 history = raw["history"]
                 if any(not t["user"].strip() for t in history) or any(not t["bot"].strip() for t in history[:-1]):

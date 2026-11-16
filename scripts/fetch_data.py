@@ -33,6 +33,12 @@ FILES = {
         "be32a36e0e5a34dd17ba2eda7cd54dd74dd5f25a/OR-Bench/OR-Bench.json",
         "58baab47242a1e6ee7a577525e5b8526c489a2fa9e258739e64709f1c99f2025",
     )],
+    "multijail": [(  # 315 prompts x 10 languages, human translations
+        "MultiJail.csv",
+        "https://raw.githubusercontent.com/DAMO-NLP-SG/multilingual-safety-for-LLMs/"
+        "577ac511437e07a256130945ef312a99158a18ad/data/MultiJail.csv",
+        "2798ed6fe470b80b1f486976e0fb3baa3ce008e62b6ca0abbf2e1ed5b1dfb355",
+    )],
     "xstest": [(
         "xstest_prompts.csv",
         "https://raw.githubusercontent.com/paul-rottger/xstest/"

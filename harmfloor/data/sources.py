@@ -62,16 +62,45 @@ def read_safedial(path: Path) -> list[dict]:
     return rows
 
 
+MULTIJAIL_LANGUAGES = ("en", "zh", "it", "vi", "ar", "ko", "th", "bn", "sw", "jv")
+MULTIJAIL_COLUMNS = {"id", "source", "tags", *MULTIJAIL_LANGUAGES}
+
+
+def read_multijail(path: Path) -> list[dict[str, str]]:
+    """MultiJail: 315 harmful prompts, each human-translated into nine languages."""
+    rows, ids = [], set()
+    with path.open(encoding="utf-8-sig", newline="") as stream:
+        reader = csv.DictReader(stream)
+        fields = reader.fieldnames or []
+        if not MULTIJAIL_COLUMNS.issubset(fields) or len(fields) != len(set(fields)):
+            raise ValueError(f"{path}: invalid MultiJail header")
+        for row in reader:
+            if None in row or any(value is None for value in row.values()):
+                raise ValueError(f"{path}: row does not match CSV header")
+            sid = require_text(row, "id", str(path))
+            if not sid.isdecimal() or sid in ids:
+                raise ValueError(f"{path}: id must be a unique nonnegative integer")
+            for key in MULTIJAIL_LANGUAGES:
+                require_text(row, key, f"{path}:{sid}")
+            ids.add(sid)
+            rows.append(row)
+    if not rows:
+        raise ValueError(f"{path}: no MultiJail records")
+    return rows
+
+
 def source_rows(source: str, path: Path) -> list[dict]:
     if source == "jbb_behaviors":
         return read_jbb(path)
     if source == "safedialbench":
         return read_safedial(path)
+    if source == "multijail":
+        return read_multijail(path)
     raise ValueError(f"annotation workflow does not support {source!r}")
 
 
 def source_id(source: str, row: dict) -> str:
-    return row["Index"] if source == "jbb_behaviors" else str(row["id"])
+    return row["Index"] if source == "jbb_behaviors" else str(row["id"])  # MultiJail ids are strings
 
 
 def contexts(source: str, path: Path) -> tuple[dict[str, str], dict[str, list[str]]]:
@@ -81,6 +110,9 @@ def contexts(source: str, path: Path) -> tuple[dict[str, str], dict[str, list[st
         if source == "jbb_behaviors":
             result[sid] = f"[{row['Category']}] {row['Goal']}"
             stratum = row["Category"]
+        elif source == "multijail":  # reviewed once in English; the label covers every language
+            result[sid] = f"[{row['tags']}] {row['en']}"
+            stratum = row["tags"].split(",")[0].strip() or "untagged"
         else:
             history = row["history"]
             lines = [f"[{row['task']} / {row['method']}] SOURCE REFERENCE CONTEXT"]

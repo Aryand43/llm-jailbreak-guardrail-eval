@@ -8,7 +8,8 @@ from harmfloor.data.registry import RAW_ROOT
 from harmfloor.data.sources import contexts, read_safedial
 
 RAW = {"jbb_behaviors": RAW_ROOT / "jbb_behaviors" / "harmful-behaviors.csv",
-       "safedialbench": RAW_ROOT / "safedialbench" / "datasets_en.jsonl"}
+       "safedialbench": RAW_ROOT / "safedialbench" / "datasets_en.jsonl",
+       "multijail": RAW_ROOT / "multijail" / "MultiJail.csv"}
 
 
 def main():

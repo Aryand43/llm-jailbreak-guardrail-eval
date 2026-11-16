@@ -137,3 +137,76 @@ def test_make_backend():
     assert make_backend("fake", "x").name == "x"
     with pytest.raises(ValueError):
         make_backend("openai", "x")
+
+
+# --------------------------------------------------------------------------- experiment 2
+
+from harmfloor.run.translate import FakeTranslator, _segments, needs_translation  # noqa: E402
+
+
+def ml_item(sid, lang):
+    it = item(f"{sid}:{lang}", family="direct" if lang == "en" else "obfuscation_based", source="mj")
+    return it.model_copy(update={"intent_id": f"mj:{sid}", "attack_method": f"MultiJail-{lang}",
+                                 "native_labels": {"language": lang}})
+
+
+@pytest.fixture
+def ml_run(tmp_path):
+    sets = {"harmful": [ml_item(i, lang) for i in range(5) for lang in ("en", "zh", "sw")],
+            "calibration": [item(f"b{i}", benign=True, source="xstest") for i in range(20)],
+            "over_refusal": []}
+    path = tmp_path / "ml"
+    stages.write_items(path, sets, {"note": "test"})
+    return path
+
+
+def test_language_detection():
+    assert not needs_translation("Here is how you would do that, step by step.", "sw")
+    assert needs_translation("Hapa kuna jinsi ya kufanya hivyo hatua kwa hatua.", "sw")
+    assert needs_translation("这是一个回答。", "zh")
+    assert not needs_translation("Sorry, I can't help with that.", "zh")
+    assert not needs_translation("anything", "en")
+    assert _segments("a\n\nb. c.", max_chars=1) == ["a", "b.", "c."]
+
+
+def test_multilingual_pipeline_translates_for_judge_only(ml_run):
+    stages.generate(ml_run, FakeBackend("t"), n=4, decoding=DECODING)
+    stages.guard(ml_run, FakeBackend("g"), "guard")
+    with pytest.raises(RuntimeError, match="translate"):
+        stages.judge(ml_run, FakeBackend("j"), "judge")
+
+    class NativeReplies(FakeTranslator):  # pretend every reply is in the prompt language
+        pass
+
+    import harmfloor.run.stages as st
+    orig = st.needs_translation
+    st.needs_translation = lambda text, lang: True
+    try:
+        assert stages.translate(ml_run, NativeReplies(), model="t") == 10 * 4  # zh + sw, not en
+        assert stages.translate(ml_run, NativeReplies(), model="t") == 0  # resumes
+    finally:
+        st.needs_translation = orig
+    rec = Recorder("j")
+    stages.judge(ml_run, rec, "judge")
+    graded = [m["content"] for convs, _ in rec.calls for c in convs for m in c]
+    assert sum("[zh->en]" in g for g in graded) == 5 * 4 and sum("[sw->en]" in g for g in graded) == 5 * 4
+
+    res = stages.analyze(ml_run, model="t", guard_name="guard", judge_name="judge", budgets=[1, 2, 4],
+                         max_fprs=[0.05], n_boot=20, group_by="attack_method")
+    assert set(res["cells"]["none"]) == {"direct:MultiJail-en", "obfuscation_based:MultiJail-zh",
+                                         "obfuscation_based:MultiJail-sw"}
+    assert (ml_run / "results_by_attack_method.json").exists()
+    assert all(v == 1.0 for v in res["cells"]["none"]["direct:MultiJail-en"]["pass"].values())
+
+
+def test_build_language_filter(tmp_path, monkeypatch):
+    from harmfloor.data import registry
+
+    items = [ml_item(i, lang) for i in range(3) for lang in ("en", "zh", "bn")]
+    monkeypatch.setattr(registry, "load", lambda s: registry.LoadResult(items=items))
+    import harmfloor.data.pool as pool
+    monkeypatch.setattr(pool, "evaluation_pool", lambda its, **kw: list(its))
+    counts = stages.build(tmp_path / "r", ["multijail"], 0, languages=["en", "bn"])
+    assert counts["harmful"] == 6
+    kept = {stages.language(it) for _, it in stages.load_items(tmp_path / "r")}
+    assert kept == {"en", "bn"}

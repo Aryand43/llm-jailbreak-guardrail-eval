@@ -116,6 +116,13 @@ def pool_curves(
     return ceilings, curves
 
 
+def best_of_q_pass(risk: Sequence[float], qs: Sequence[int], tau: float | None) -> np.ndarray:
+    """P(best-of-q returns a response rather than a refusal) for one prompt: 1 - refusal."""
+    if tau is None:
+        return np.ones(len(qs))
+    return 1.0 - best_of_q_refusal(risk, qs, tau)
+
+
 # --------------------------------------------------------------------------- judge error
 
 
@@ -129,6 +136,23 @@ def correct_for_judge_error(rate: np.ndarray | float, sensitivity: float, specif
     if denom <= 0:
         raise ValueError("judge is no better than chance (sensitivity + specificity <= 1)")
     return np.clip((np.asarray(rate, float) + specificity - 1.0) / denom, 0.0, 1.0)
+
+
+def correct_curve_for_judge_error(rho: np.ndarray | float, passes: np.ndarray | float,
+                                  sensitivity: float, specificity: float) -> np.ndarray:
+    """Judge correction for the curve (Proofs.pdf, Prop. 3, eq. 33).
+
+    A refusal is harmless by definition and never judged, so it cannot be a judge false
+    positive. Only returned responses carry the judge's false-positive rate:
+        rho = (rho_judge - (1 - sp) * pass) / (se + sp - 1).
+    Applying plain Rogan-Gladen to rho over-corrects by (1 - sp)(1 - pass) / (se + sp - 1).
+    With pass = 1 (no threshold, or the ceiling) this reduces to correct_for_judge_error.
+    """
+    denom = sensitivity + specificity - 1.0
+    if denom <= 0:
+        raise ValueError("judge is no better than chance (sensitivity + specificity <= 1)")
+    rho, passes = np.asarray(rho, float), np.asarray(passes, float)
+    return np.clip((rho - (1.0 - specificity) * passes) / denom, 0.0, 1.0)
 
 
 def judge_accuracy(judge: Sequence[int], human: Sequence[int]) -> tuple[float, float]:
@@ -240,6 +264,7 @@ def estimate_bounds(
     judge_validation: tuple[Sequence[int], Sequence[int]] | None = None,
     n_boot: int = 1000,
     seed: int = 0,
+    passes: np.ndarray | None = None,
 ) -> BoundEstimate:
     """Ceiling, floor and 95% percentile CIs for one cell.
 
@@ -247,8 +272,14 @@ def estimate_bounds(
     clusters: bootstrap unit per prompt (intent_id), so paraphrases of one intent move together.
     judge_validation: (judge_labels, human_labels); if given, rates are judge-error corrected
     and the validation sample is resampled inside the bootstrap too.
+    passes: (P, Q) per-prompt probability that best-of-q returns a response (not a refusal),
+    from best_of_q_pass. Needed for a correct judge correction when a threshold is used;
+    defaults to 1 (no refusals).
     """
     ceilings, curves = np.asarray(ceilings, float), np.asarray(curves, float)
+    passes = np.ones_like(curves) if passes is None else np.asarray(passes, float)
+    if passes.shape != curves.shape:
+        raise ValueError("passes must have the same shape as curves")
     rng = np.random.default_rng(seed)
     clusters = np.arange(len(ceilings)) if clusters is None else np.asarray(clusters)
     uniq = np.unique(clusters)
@@ -258,7 +289,8 @@ def estimate_bounds(
         u, rho = ceilings[idx].mean(), curves[idx].mean(axis=0)
         if jv is not None:
             sens, spec = judge_accuracy(*jv)
-            u, rho = float(correct_for_judge_error(u, sens, spec)), correct_for_judge_error(rho, sens, spec)
+            u = float(correct_for_judge_error(u, sens, spec))
+            rho = correct_curve_for_judge_error(rho, passes[idx].mean(axis=0), sens, spec)
         return u, rho
 
     jv_full = None if judge_validation is None else tuple(np.asarray(a) for a in judge_validation)

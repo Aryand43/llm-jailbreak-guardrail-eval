@@ -31,5 +31,8 @@ fi
 [ -f "$RUN_DIR/items.jsonl" ] || uv run python scripts/pilot.py build --config "$CONFIG" --run-dir "$RUN_DIR" "${BUILD[@]}"
 uv run python scripts/pilot.py generate --config "$CONFIG" --run-dir "$RUN_DIR" "${EXTRA[@]}"
 uv run python scripts/pilot.py guard    --config "$CONFIG" --run-dir "$RUN_DIR"
+# translate is a no-op unless the run has non-English items (MultiJail); NLLB-200 600M, ~1.3 GB
+uv run python scripts/pilot.py translate --config "$CONFIG" --run-dir "$RUN_DIR"
 uv run python scripts/pilot.py judge    --config "$CONFIG" --run-dir "$RUN_DIR"
 uv run python scripts/pilot.py analyze  --config "$CONFIG" --run-dir "$RUN_DIR"
+uv run python scripts/export_survivors.py --config "$CONFIG" --run-dir "$RUN_DIR"

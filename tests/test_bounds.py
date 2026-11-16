@@ -131,3 +131,21 @@ def test_boundary_floor_is_not_called_positive():
     assert np.mean(np.asarray(Ls) < b.ZERO_TOL) > 0.2
     est = b.BoundEstimate(0.5, (0.4, 0.6), rho, b.fit_floor(qs, rho), (1e-9, 0.1), (0.05, 0.1), 0.4)
     assert not est.floor_is_positive
+
+
+def test_curve_correction_accounts_for_refusals():
+    """Proofs.pdf C2: refusals are never judged, so they carry no judge false positives."""
+    se, sp = 0.85, 0.95
+    true_rho, pass_rate = 0.10, 0.7
+    judged = se * true_rho + (1 - sp) * (pass_rate - true_rho)  # judge sees only returned responses
+    fixed = b.correct_curve_for_judge_error(judged, pass_rate, se, sp)
+    assert fixed == pytest.approx(true_rho)
+    naive = b.correct_for_judge_error(judged, se, sp)
+    assert naive == pytest.approx(true_rho - (1 - sp) * (1 - pass_rate) / (se + sp - 1))  # the old bias
+    assert b.correct_curve_for_judge_error(judged, 1.0, se, sp) == pytest.approx(b.correct_for_judge_error(judged, se, sp))
+
+
+def test_best_of_q_pass():
+    risk = np.array([0.2, 0.9])
+    assert b.best_of_q_pass(risk, [1, 2], None) == pytest.approx([1, 1])
+    assert b.best_of_q_pass(risk, [1, 2], 0.5) == pytest.approx([0.5, 1.0])

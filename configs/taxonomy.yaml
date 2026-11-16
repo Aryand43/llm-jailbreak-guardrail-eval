@@ -72,6 +72,17 @@ attack_crosswalk:
     Purpose Reverse: {family: multi_turn, review: false}
     Role Play: {family: multi_turn, review: false}
     Fallacy Attack: {family: multi_turn, review: false}
+  multijail:  # language code -> family; English is the untranslated reference
+    en: direct
+    zh: obfuscation_based
+    it: obfuscation_based
+    vi: obfuscation_based
+    ar: obfuscation_based
+    ko: obfuscation_based
+    th: obfuscation_based
+    bn: obfuscation_based
+    sw: obfuscation_based
+    jv: obfuscation_based
   direct_sources: [jbb_behaviors, harmbench, strongreject, pku_saferlhf, or_bench, xstest]
 
 # multi-turn strategies -> shared strategy tags (secondary axis inside `multi_turn`)

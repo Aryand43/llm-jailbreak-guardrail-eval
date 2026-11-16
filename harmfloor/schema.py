@@ -111,7 +111,7 @@ class Item(Record):
             raise ValueError("turns must end with a user turn")
         if not self.intent.strip() or any(not turn.content.strip() for turn in self.turns):
             raise ValueError("intent and target-bound turns must not be blank")
-        if self.source in {"jbb_behaviors", "safedialbench"} and self.annotation is None:
+        if self.source in {"jbb_behaviors", "safedialbench", "multijail"} and self.annotation is None:
             raise ValueError("reviewed annotation provenance is required; rebuild legacy caches")
         if self.annotation is not None:
             a = self.annotation

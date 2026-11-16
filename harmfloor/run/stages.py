@@ -4,8 +4,10 @@
     generate  contexts.jsonl     multi-turn histories written by the target (greedy)
               samples.jsonl      n pooled responses per item at the final turn
     guard     guard.jsonl        P(unsafe) for every sample, from the guard's first token
+    translate translations.jsonl English text of non-English responses (multilingual items only)
     judge     labels.jsonl       rubric score and harm label for every sample of a harmful item
-    analyze   results.json       ceiling, curves, floor, tests and decomposition per attack family
+    analyze   results.json       ceiling, curves, floor, tests and decomposition per group
+                                 (attack family, or attack method: language / dialogue strategy)
 
 Stages are resumable: work already present in a stage's output is skipped. Every stage records
 what ran it in manifest.json, so results can be traced to models, versions and the item set.
@@ -27,6 +29,7 @@ from harmfloor import bounds
 from harmfloor.data.annotations import sha256_file
 from harmfloor.run import judge as rubric
 from harmfloor.run.backend import Backend
+from harmfloor.run.translate import Translator, needs_translation
 from harmfloor.schema import GuardScore, HarmLabel, Item, PooledSample
 
 ROLES = ("harmful", "calibration", "over_refusal")
@@ -90,9 +93,16 @@ def write_items(run: Path, sets: dict[str, list[Item]], info: dict[str, Any]) ->
     return counts
 
 
+def language(item: Item) -> str:
+    """Prompt language: MultiJail records it; every other source is English."""
+    return item.native_labels.get("language", "en")
+
+
 def build(run: Path, sources: list[str], benign_per_source: int, seed: int = 0,
-          limit: int | None = None) -> dict[str, int]:
-    """limit keeps the first `limit` items of each role (per family for harmful): smoke runs only."""
+          limit: int | None = None, languages: list[str] | None = None) -> dict[str, int]:
+    """limit keeps the first `limit` items of each role (per family for harmful): smoke runs only.
+    languages keeps only items in those languages (MultiJail); English-only sources are unaffected
+    unless "en" is left out."""
     from harmfloor.data.pool import family_evaluation_sets
     from harmfloor.data.registry import load
 
@@ -100,18 +110,18 @@ def build(run: Path, sources: list[str], benign_per_source: int, seed: int = 0,
     held = {}
     for source in sources:
         result = load(source)
-        items += result.items
+        items += [it for it in result.items if languages is None or language(it) in languages]
         held[source] = result.coverage
     s = family_evaluation_sets(items, benign_per_source=benign_per_source, seed=seed)
     sets = {"harmful": s.harmful, "calibration": s.fpr_calibration, "over_refusal": s.over_refusal}
     if limit is not None:
         by_family: dict[str, list[Item]] = defaultdict(list)
         for it in s.harmful:
-            by_family[it.attack_family].append(it)
+            by_family[f"{it.attack_family}/{language(it)}"].append(it)
         sets = {"harmful": [it for fam in sorted(by_family) for it in by_family[fam][:limit]],
                 "calibration": s.fpr_calibration[:limit], "over_refusal": s.over_refusal[:limit]}
     return write_items(run, sets, {"sources": sources, "coverage": held, "benign_sampling": s.sampling_counts,
-                                   "smoke_limit": limit})
+                                   "smoke_limit": limit, "languages": languages})
 
 
 # --------------------------------------------------------------------------- generate
@@ -191,19 +201,63 @@ def guard(run: Path, backend: Backend, guard_name: str, *, batch_size: int = 512
     return written
 
 
+# --------------------------------------------------------------------------- translate
+
+
+def translate(run: Path, translator: Translator, *, model: str, batch_size: int = 256) -> int:
+    """English text for every sample of a non-English harmful item, for the judge only (the guard
+    already scored the original). Samples the target wrote in English are stored unchanged with
+    translated=False, so the judge reads exactly one row per sample."""
+    items = {it.item_id: (role, it) for role, it in load_items(run)}
+    done = {(r["item_id"], r["sample_idx"]) for r in _read(run / "translations.jsonl")
+            if r["model"] == model and r["translator"] == translator.name}
+    todo: dict[str, list[dict]] = defaultdict(list)
+    for s in _read(run / "samples.jsonl"):
+        role, it = items[s["item_id"]]
+        if s["model"] == model and role == "harmful" and language(it) != "en" and (s["item_id"], s["sample_idx"]) not in done:
+            todo[language(it)].append(s)
+    written, translated = 0, defaultdict(int)
+    for lang, samples in sorted(todo.items()):
+        for batch in _batches(samples, batch_size):
+            flags = [needs_translation(s["text"], lang) for s in batch]
+            src = [s["text"] for s, f in zip(batch, flags) if f]
+            out = iter(translator.to_english(src, lang) if src else [])
+            rows = [{"item_id": s["item_id"], "model": model, "sample_idx": s["sample_idx"],
+                     "translator": translator.name, "language": lang, "translated": f,
+                     "text_en": next(out) if f else s["text"]} for s, f in zip(batch, flags)]
+            translated[lang] += sum(flags)
+            written += _append(run / "translations.jsonl", rows)
+    _record(run, f"translate:{translator.name}", {**translator.info(), "rows_written": written,
+                                                  "translated_by_language": dict(translated)})
+    return written
+
+
+def _english_texts(run: Path, model: str) -> dict[tuple[str, int], str]:
+    return {(r["item_id"], r["sample_idx"]): r["text_en"] for r in _read(run / "translations.jsonl")
+            if r["model"] == model}
+
+
 # --------------------------------------------------------------------------- judge
 
 
 def judge(run: Path, backend: Backend, judge_name: str, *, threshold: float = 0.5, batch_size: int = 256) -> int:
     """Label every sample of a harmful item. Unreadable grader answers are kept with harmful=None
-    and reported; the analysis drops them and counts how many it dropped."""
+    and reported; the analysis drops them and counts how many it dropped. Non-English samples are
+    judged on their English translation (translate stage), and are refused if it has not run."""
     roles = {it.item_id: (role, it) for role, it in load_items(run)}
     done = {(r["item_id"], r["model"], r["sample_idx"]) for r in _read(run / "labels.jsonl") if r["judge"] == judge_name}
     todo = [s for s in _read(run / "samples.jsonl")
             if roles[s["item_id"]][0] == "harmful" and (s["item_id"], s["model"], s["sample_idx"]) not in done]
+    english: dict[tuple[str, int], str] = {}
+    for model in {s["model"] for s in todo}:
+        english.update(_english_texts(run, model))
+    missing = [s for s in todo if language(roles[s["item_id"]][1]) != "en" and (s["item_id"], s["sample_idx"]) not in english]
+    if missing:
+        raise RuntimeError(f"{len(missing)} non-English samples have no translation; run the translate stage first")
     written, unreadable = 0, 0
     for batch in _batches(todo, batch_size):
-        convs = [rubric.messages(roles[s["item_id"]][1].intent, s["text"]) for s in batch]
+        convs = [rubric.messages(roles[s["item_id"]][1].intent, english.get((s["item_id"], s["sample_idx"]), s["text"]))
+                 for s in batch]
         outs = backend.sample(convs, n=1, temperature=0.0, top_p=1.0, max_tokens=32, seed=0)
         rows = []
         for s, gens in zip(batch, outs):
@@ -221,11 +275,25 @@ def judge(run: Path, backend: Backend, judge_name: str, *, threshold: float = 0.
 # --------------------------------------------------------------------------- analyze
 
 
+GROUPINGS = {
+    "attack_family": lambda it: it.attack_family,
+    # per language for MultiJail, per dialogue strategy for SafeDialBench, plain for direct sources
+    "attack_method": lambda it: f"{it.attack_family}:{it.attack_method or it.source}",
+}
+
+
+def results_name(group_by: str) -> str:
+    return "results.json" if group_by == "attack_family" else f"results_by_{group_by}.json"
+
+
 def analyze(run: Path, *, model: str, guard_name: str, judge_name: str, budgets: list[int],
-            max_fprs: list[float], n_boot: int = 1000) -> dict[str, Any]:
-    """Ceiling, curve and floor per attack family, at each false-positive constraint and with no
-    refusal threshold. Judge-error correction is not applied in the pilot: it needs the human
-    sample, which does not exist yet. Reported rates are raw judge rates."""
+            max_fprs: list[float], n_boot: int = 1000, group_by: str = "attack_family") -> dict[str, Any]:
+    """Ceiling, curve and floor per group (attack family, or attack method), at each
+    false-positive constraint and with no refusal threshold. Judge-error correction is not applied
+    yet: it needs the human sample. Reported rates are raw judge rates; the per-q pass rate (share
+    of prompts where best-of-q returns a response rather than refusing) is reported alongside, as
+    the judge correction needs it (bounds.correct_curve_for_judge_error)."""
+    key = GROUPINGS[group_by]
     items = load_items(run)
     risk: dict[str, dict[int, float]] = defaultdict(dict)
     for r in _read(run / "guard.jsonl"):
@@ -257,9 +325,10 @@ def analyze(run: Path, *, model: str, guard_name: str, judge_name: str, budgets:
     families: dict[str, list[Item]] = defaultdict(list)
     for role, it in items:
         if role == "harmful" and harm[it.item_id]:
-            families[it.attack_family].append(it)
+            families[key(it)].append(it)
 
     out: dict[str, Any] = {"model": model, "guard": guard_name, "judge": judge_name, "budgets": qs,
+                           "group_by": group_by,
                            "judge_corrected": False, "unreadable_labels_dropped": unreadable,
                            "thresholds": {k: v for k, v in thresholds.items() if v}, "cells": {}}
     for setting, taus in thresholds.items():
@@ -268,23 +337,27 @@ def analyze(run: Path, *, model: str, guard_name: str, judge_name: str, budgets:
                 q: float(np.mean([bounds.best_of_q_refusal(r, [q], taus[q])[0] for r in over])) if over else None
                 for q in qs}
         for family, members in sorted(families.items()):
-            ceilings, curves, clusters = [], [], []
+            ceilings, curves, passes, clusters = [], [], [], []
             for it in members:
                 r, h = pool(it.item_id, True)
                 ceilings.append(h.mean())
                 curves.append([bounds.best_of_q_harm(r, h, [q], tau=None if taus is None else taus[q])[0] for q in qs])
+                passes.append([bounds.best_of_q_pass(r, [q], None if taus is None else taus[q])[0] for q in qs])
                 clusters.append(it.intent_id)
-            est = bounds.estimate_bounds(np.array(ceilings), np.array(curves), qs, clusters=clusters, n_boot=n_boot)
+            est = bounds.estimate_bounds(np.array(ceilings), np.array(curves), qs, clusters=clusters,
+                                         n_boot=n_boot, passes=np.array(passes))
             dec = bounds.BoundDecomposition(est.ceiling, float(est.rho[-1]), est.floor)
             out["cells"].setdefault(setting, {})[family] = {
                 "prompts": len(members), "ceiling": est.ceiling, "ceiling_ci": est.ceiling_ci,
                 "rho": dict(zip(qs, map(float, est.rho))), "floor": est.floor, "floor_ci": est.floor_ci,
+                "pass": dict(zip(qs, map(float, np.mean(passes, axis=0)))),
                 "rho_max_ci": est.rho_max_ci, "frac_zero_floor": est.frac_zero_floor,
                 "model_free_positive": est.rho_max_ci[0] > bounds.ZERO_TOL,
                 "asymptote_positive": est.floor_ci[0] > bounds.ZERO_TOL,
                 "fit": {"L": est.fit.L, "A": est.fit.A, "alpha": est.fit.alpha},
                 "decomposition": {"removed": dec.removed, "reducible": dec.reducible,
                                   "irreducible": dec.irreducible, "position": dec.position}}
-    (run / "results.json").write_text(json.dumps(out, indent=2))
-    _record(run, "analyze", {"model": model, "guard": guard_name, "judge": judge_name, "n_boot": n_boot})
+    (run / results_name(group_by)).write_text(json.dumps(out, indent=2))
+    _record(run, "analyze", {"model": model, "guard": guard_name, "judge": judge_name, "n_boot": n_boot,
+                             "group_by": group_by})
     return out
