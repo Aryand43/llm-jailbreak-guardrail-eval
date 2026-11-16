@@ -22,9 +22,10 @@ export VLLM_USE_FLASHINFER_SAMPLER="${VLLM_USE_FLASHINFER_SAMPLER:-0}"
 python_check='import vllm, torch; assert torch.cuda.is_available(), "no CUDA GPU"; print("vllm", vllm.__version__, "|", torch.cuda.get_device_name(0))'
 uv run python -c "$python_check"
 
-# SMOKE=1 runs 5 items per role with 8 samples each (minutes) into runs/smoke. Do this first.
+# SMOKE=1 runs 5 items per role with 8 samples each (minutes) into runs/smoke-<config name>.
+# Do this first. Each config gets its own smoke folder, so an old smoke run is never reused.
 if [ "${SMOKE:-0}" = "1" ]; then
-  RUN_DIR="${RUN_DIR:-runs/smoke}"; EXTRA=(--n 8); BUILD=(--limit 5)
+  RUN_DIR="${RUN_DIR:-runs/smoke-$(basename "$CONFIG" .yaml)}"; EXTRA=(--n 8); BUILD=(--limit 5)
 else
   RUN_DIR="${RUN_DIR:-$(uv run python -c "import yaml,sys; print(yaml.safe_load(open(sys.argv[1]))['run_dir'])" "$CONFIG")}"; EXTRA=(); BUILD=()
 fi
