@@ -99,6 +99,17 @@ def source_rows(source: str, path: Path) -> list[dict]:
     raise ValueError(f"annotation workflow does not support {source!r}")
 
 
+def _first_tag(tags: str) -> str:
+    """MultiJail tags are a Python list literal, e.g. "['Theft', 'Weapons']"."""
+    import ast
+
+    try:
+        parsed = ast.literal_eval(tags)
+    except (ValueError, SyntaxError):
+        parsed = [tags]
+    return (parsed[0].strip() if isinstance(parsed, list) and parsed else str(parsed).strip()) or "untagged"
+
+
 def source_id(source: str, row: dict) -> str:
     return row["Index"] if source == "jbb_behaviors" else str(row["id"])  # MultiJail ids are strings
 
@@ -112,7 +123,7 @@ def contexts(source: str, path: Path) -> tuple[dict[str, str], dict[str, list[st
             stratum = row["Category"]
         elif source == "multijail":  # reviewed once in English; the label covers every language
             result[sid] = f"[{row['tags']}] {row['en']}"
-            stratum = row["tags"].split(",")[0].strip() or "untagged"
+            stratum = _first_tag(row["tags"])
         else:
             history = row["history"]
             lines = [f"[{row['task']} / {row['method']}] SOURCE REFERENCE CONTEXT"]
