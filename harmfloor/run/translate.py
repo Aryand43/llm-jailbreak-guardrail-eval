@@ -63,7 +63,7 @@ class Translator(Protocol):
 class NLLBTranslator:
     """facebook/nllb-200-distilled-600M via transformers on the GPU (installed with vLLM)."""
 
-    def __init__(self, model: str = "facebook/nllb-200-distilled-600M", batch_size: int = 32):
+    def __init__(self, model: str = "facebook/nllb-200-distilled-600M", batch_size: int = 64):
         import torch
         from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 
@@ -76,18 +76,23 @@ class NLLBTranslator:
     def to_english(self, texts: list[str], lang: str) -> list[str]:
         self._tok.src_lang = NLLB_CODES[lang]
         eng = self._tok.convert_tokens_to_ids("eng_Latn")
-        results = []
-        for text in texts:
-            segs = _segments(text)
-            done = []
-            for i in range(0, len(segs), self._batch):
-                batch = self._tok(segs[i:i + self._batch], return_tensors="pt", padding=True,
-                                  truncation=True, max_length=512).to("cuda")
-                with self._torch.no_grad():
-                    out = self._model.generate(**batch, forced_bos_token_id=eng, max_new_tokens=512)
-                done += self._tok.batch_decode(out, skip_special_tokens=True)
-            results.append("\n".join(done))
-        return results
+        # Pool the sentences of every text and batch them by length (one GPU call per batch, not
+        # per response), then put each text back together in its original sentence order.
+        segs = [(t, s) for t, text in enumerate(texts) for s in _segments(text)]
+        order = sorted(range(len(segs)), key=lambda i: len(segs[i][1]))
+        english = [""] * len(segs)
+        for i in range(0, len(order), self._batch):
+            idx = order[i:i + self._batch]
+            batch = self._tok([segs[j][1] for j in idx], return_tensors="pt", padding=True,
+                              truncation=True, max_length=512).to("cuda")
+            with self._torch.no_grad():
+                out = self._model.generate(**batch, forced_bos_token_id=eng, max_new_tokens=512)
+            for j, line in zip(idx, self._tok.batch_decode(out, skip_special_tokens=True)):
+                english[j] = line
+        results: list[list[str]] = [[] for _ in texts]
+        for (t, _), line in zip(segs, english):
+            results[t].append(line)
+        return ["\n".join(r) for r in results]
 
     def info(self) -> dict[str, Any]:
         import transformers
