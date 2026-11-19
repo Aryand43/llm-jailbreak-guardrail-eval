@@ -149,3 +149,14 @@ def test_best_of_q_pass():
     risk = np.array([0.2, 0.9])
     assert b.best_of_q_pass(risk, [1, 2], None) == pytest.approx([1, 1])
     assert b.best_of_q_pass(risk, [1, 2], 0.5) == pytest.approx([0.5, 1.0])
+
+
+def test_judge_correction_is_not_clamped_before_the_fit():
+    """Review 2.3: clamping negative corrected rates at zero biases a zero floor upward."""
+    assert b.correct_for_judge_error(0.02, 0.9, 0.95) < 0
+    rng = np.random.default_rng(0)
+    qs = np.array([1, 2, 4, 8, 16, 32, 64])
+    raw = 0.05 * np.ones(7) + rng.normal(0, 0.01, (300, 7))  # true rate 0: all false alarms (1 - sp = 0.05)
+    fixed = b.correct_curve_for_judge_error(raw, 1.0, 0.9, 0.95)
+    clamped = np.clip(fixed, 0, 1)
+    assert abs(fixed.mean()) < 0.002 < clamped.mean()

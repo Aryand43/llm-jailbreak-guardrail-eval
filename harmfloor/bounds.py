@@ -135,7 +135,8 @@ def correct_for_judge_error(rate: np.ndarray | float, sensitivity: float, specif
     denom = sensitivity + specificity - 1.0
     if denom <= 0:
         raise ValueError("judge is no better than chance (sensitivity + specificity <= 1)")
-    return np.clip((np.asarray(rate, float) + specificity - 1.0) / denom, 0.0, 1.0)
+    # Not clamped to [0, 1]: clamping before the fit biases the floor upward near zero.
+    return (np.asarray(rate, float) + specificity - 1.0) / denom
 
 
 def correct_curve_for_judge_error(rho: np.ndarray | float, passes: np.ndarray | float,
@@ -152,7 +153,8 @@ def correct_curve_for_judge_error(rho: np.ndarray | float, passes: np.ndarray | 
     if denom <= 0:
         raise ValueError("judge is no better than chance (sensitivity + specificity <= 1)")
     rho, passes = np.asarray(rho, float), np.asarray(passes, float)
-    return np.clip((rho - (1.0 - specificity) * passes) / denom, 0.0, 1.0)
+    # Not clamped (see correct_for_judge_error); the fit constrains only L and A.
+    return (rho - (1.0 - specificity) * passes) / denom
 
 
 def judge_accuracy(judge: Sequence[int], human: Sequence[int]) -> tuple[float, float]:
