@@ -1,0 +1,9 @@
+# Ablation: judge. A second judge from another model family (Google Gemma 2 9B, 4-bit AWQ) labels the
+# same samples with the same rubric. Replaces Mistral 7B, which did not follow the rubric.
+extends: ../experiment2_12gb.yaml
+tag: judge_gemma
+judge:
+  name: rubric_gemma2_9b_awq
+  model: hugging-quants/gemma-2-9b-it-AWQ-INT4
+  fold_system: true          # Gemma's chat template has no system role
+  max_tokens: 96             # room for a short preamble before the three ratings

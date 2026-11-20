@@ -48,9 +48,10 @@ fi
 step "guard session" pilot guard --config configs/ablations/guard_session.yaml \
   && step "analyze session" pilot analyze --config configs/ablations/guard_session.yaml
 
-# 3. Second judge from another family (Mistral 7B).
-step "judge Mistral" pilot judge --config configs/ablations/judge_mistral.yaml \
-  && step "analyze judge Mistral" pilot analyze --config configs/ablations/judge_mistral.yaml
+# 3. Second judge from another family (Gemma 2 9B). Mistral 7B was tried first and dropped: it did
+#    not follow the rubric (3,777 of 20,288 answers unreadable, the rest almost all scored harmless).
+step "judge Gemma" pilot judge --config configs/ablations/judge_gemma.yaml \
+  && step "analyze judge Gemma" pilot analyze --config configs/ablations/judge_gemma.yaml
 
 # 4. Judge reads the original language instead of the translation.
 step "judge native" pilot judge --config configs/ablations/judge_native.yaml \

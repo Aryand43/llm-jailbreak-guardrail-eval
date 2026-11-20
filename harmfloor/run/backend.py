@@ -56,12 +56,20 @@ class VLLMBackend:
     def next_token_probs(self, conversations, tokens):
         from vllm import SamplingParams
 
-        params = SamplingParams(n=1, temperature=0.0, max_tokens=1, logprobs=20)
+        # A few tokens, so a chat template that leaves the answer behind a newline still works:
+        # the label is read at the first position whose generated token is not whitespace.
+        params = SamplingParams(n=1, temperature=0.0, max_tokens=3, logprobs=20)
         outs = self._llm.chat(conversations, params, use_tqdm=True)
         result = []
         for out in outs:
+            gen = out.outputs[0]
+            pos = 0
+            for i, (tid, lps) in enumerate(zip(gen.token_ids, gen.logprobs)):
+                if (lps[tid].decoded_token or "").strip():
+                    pos = i
+                    break
             mass: dict[str, float] = {}
-            for lp in out.outputs[0].logprobs[0].values():
+            for lp in gen.logprobs[pos].values():
                 key = (lp.decoded_token or "").strip().lower()
                 mass[key] = mass.get(key, 0.0) + math.exp(lp.logprob)
             result.append({t: mass.get(t, 0.0) for t in tokens})

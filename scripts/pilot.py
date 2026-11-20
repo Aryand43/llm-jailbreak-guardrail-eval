@@ -85,7 +85,8 @@ def main() -> None:
             print(stages.judge(run, make_backend(a.backend, judge_model, engine), cfg["judge"]["name"],
                                threshold=cfg["judge"]["harmful_threshold"],
                                use_translation=cfg["judge"].get("use_translation", True),
-                               fold_system=cfg["judge"].get("fold_system", False)), "labels")
+                               fold_system=cfg["judge"].get("fold_system", False),
+                               max_tokens=cfg["judge"].get("max_tokens", 32)), "labels")
         else:
             for group_by in cfg.get("group_by", ["attack_family"]):
                 res = stages.analyze(run, model=target, guard_name=cfg["guard"]["name"],

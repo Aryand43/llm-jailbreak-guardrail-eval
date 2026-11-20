@@ -1,10 +1,11 @@
 # Ablation: guardrail size. Llama Guard 3 8B scores the SAME pools as the 1B guard (no new generation).
-# 8B in bf16 (16 GB) does not fit a 12 GB card, so vLLM quantizes it to FP8 while loading.
-# The display already uses ~1.3 GB, so the card has ~10.7 GB free: keep utilization at 0.85.
+# 8B in bf16 (16 GB) does not fit a 12 GB card, so vLLM quantizes it to FP8 while loading (8.5 GB).
+# The display uses ~1.3 GB, so ~10.7 GB is free: 0.88 leaves room for the KV cache of one 3k-token
+# input (Llama Guard template + final user turn + one 512-token reply fits comfortably).
 # If this fails, run_ablations_gpu.sh falls back to a pre-quantized 4-bit AWQ copy (guard_llamaguard8b_awq.yaml).
 extends: ../experiment2_12gb.yaml
 tag: guard8b
 guard:
   name: bestofq_llamaguard8b
   model: meta-llama/Llama-Guard-3-8B          # gated: licence accepted on Hugging Face
-  vllm: {quantization: fp8_per_tensor, gpu_memory_utilization: 0.85, max_model_len: 4096}
+  vllm: {quantization: fp8_per_tensor, gpu_memory_utilization: 0.88, max_model_len: 3072}

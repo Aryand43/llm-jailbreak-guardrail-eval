@@ -269,7 +269,7 @@ def test_config_extends(tmp_path):
     pilot = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(pilot)
     cfg = pilot.load_config(pilot.ROOT / "configs" / "ablations" / "guard_llamaguard8b.yaml")
-    assert cfg["guard"]["name"] == "bestofq_llamaguard8b" and cfg["guard"]["vllm"]["quantization"] == "fp8_per_tensor"
+    assert cfg["guard"]["name"] == "bestofq_llamaguard8b" and cfg["guard"]["vllm"]["quantization"] == "fp8_per_tensor" and cfg["guard"]["vllm"]["max_model_len"] == 3072
     assert cfg["judge"]["name"] == "pilot_rubric_qwen25_7b_awq" and cfg["run_dir"] == "runs/experiment2-12gb"
     assert "extends" not in cfg
 
