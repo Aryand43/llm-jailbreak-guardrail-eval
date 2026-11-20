@@ -39,10 +39,9 @@ if ! has_access meta-llama/Llama-Guard-3-8B; then
 elif pilot guard --config configs/ablations/guard_llamaguard8b.yaml; then
   step "analyze guard 8B" pilot analyze --config configs/ablations/guard_llamaguard8b.yaml
 else
-  echo "--- FP8 failed (usually out of memory); retrying with 4-bit bitsandbytes"
-  uv pip install -q bitsandbytes
-  step "guard 8B (4-bit)" pilot guard --config configs/ablations/guard_llamaguard8b_bnb.yaml \
-    && step "analyze guard 8B (4-bit)" pilot analyze --config configs/ablations/guard_llamaguard8b_bnb.yaml
+  echo "--- FP8 failed (usually out of memory); retrying with the pre-quantized 4-bit AWQ copy"
+  step "guard 8B (4-bit AWQ)" pilot guard --config configs/ablations/guard_llamaguard8b_awq.yaml \
+    && step "analyze guard 8B (4-bit AWQ)" pilot analyze --config configs/ablations/guard_llamaguard8b_awq.yaml
 fi
 
 # 2. Guardrail context: the 1B guard reads the whole dialogue.

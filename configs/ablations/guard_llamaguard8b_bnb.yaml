@@ -1,7 +1,0 @@
-# Fallback for guard_llamaguard8b.yaml when FP8 loading runs out of memory: 4-bit bitsandbytes,
-# quantized while loading. Separate guard name, so FP8 and 4-bit scores are never mixed.
-extends: guard_llamaguard8b.yaml
-tag: guard8b_4bit
-guard:
-  name: bestofq_llamaguard8b_bnb4
-  vllm: {quantization: bitsandbytes}

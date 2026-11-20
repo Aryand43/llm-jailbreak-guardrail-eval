@@ -1,0 +1,9 @@
+# Fallback for guard_llamaguard8b.yaml if FP8 loading fails: a pre-quantized 4-bit AWQ copy of
+# Llama Guard 3 8B (Weni/Llama-Guard-3-8B-AWQ, ~5.7 GB, the most-downloaded quantization).
+# Separate guard name, so FP8 and 4-bit scores are never mixed. Report the quantization in the paper.
+extends: ../experiment2_12gb.yaml
+tag: guard8b_awq
+guard:
+  name: bestofq_llamaguard8b_awq
+  model: Weni/Llama-Guard-3-8B-AWQ
+  vllm: {max_model_len: 4096}
