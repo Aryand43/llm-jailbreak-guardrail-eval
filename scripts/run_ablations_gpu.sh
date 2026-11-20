@@ -22,13 +22,21 @@ FAILED=()
 step() {  # step <name> <command...>
   local name=$1; shift
   echo; echo "=================== $name"
-  if "$@"; then echo "--- $name: ok"; else echo "--- $name: FAILED" >&2; FAILED+=("$name"); fi
+  if "$@"; then echo "--- $name: ok"; return 0; fi
+  echo "--- $name: FAILED" >&2; FAILED+=("$name"); return 1
+}
+has_access() {  # gated Hugging Face repos (Llama Guard) need an approved licence request
+  uv run python -c "from huggingface_hub import auth_check; auth_check('$1')" >/dev/null 2>&1
 }
 pilot() { uv run python scripts/pilot.py "$@"; }
 
 # 1. Guardrail size: Llama Guard 3 8B (FP8). If FP8 loading runs out of memory, fall back to 4-bit.
 echo; echo "=================== guard 8B (fp8)"
-if pilot guard --config configs/ablations/guard_llamaguard8b.yaml; then
+if ! has_access meta-llama/Llama-Guard-3-8B; then
+  echo "--- no access to meta-llama/Llama-Guard-3-8B: request it at https://huggingface.co/meta-llama/Llama-Guard-3-8B" >&2
+  echo "--- skipping the guard-size ablation; re-run this script once access is approved" >&2
+  FAILED+=("guard 8B (no Hugging Face access)")
+elif pilot guard --config configs/ablations/guard_llamaguard8b.yaml; then
   step "analyze guard 8B" pilot analyze --config configs/ablations/guard_llamaguard8b.yaml
 else
   echo "--- FP8 failed (usually out of memory); retrying with 4-bit bitsandbytes"

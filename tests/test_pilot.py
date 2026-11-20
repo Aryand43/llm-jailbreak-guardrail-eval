@@ -272,3 +272,10 @@ def test_config_extends(tmp_path):
     assert cfg["guard"]["name"] == "bestofq_llamaguard8b" and cfg["guard"]["vllm"]["quantization"] == "fp8"
     assert cfg["judge"]["name"] == "pilot_rubric_qwen25_7b_awq" and cfg["run_dir"] == "runs/experiment2-12gb"
     assert "extends" not in cfg
+
+
+def test_analyze_says_when_the_guard_has_not_run(run):
+    stages.generate(run, FakeBackend("t"), n=2, decoding=DECODING)
+    with pytest.raises(RuntimeError, match="run the guard stage"):
+        stages.analyze(run, model="t", guard_name="never_ran", judge_name="judge", budgets=[1, 2],
+                       max_fprs=[0.05], n_boot=10)

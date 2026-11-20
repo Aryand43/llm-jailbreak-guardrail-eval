@@ -353,6 +353,9 @@ def analyze(run: Path, *, model: str, guard_name: str, judge_name: str, budgets:
         over = [pool(it.item_id, False)[0] for it in dialogs if not _held_out_half(it.item_id)]
         if not calib or not over:
             raise ValueError("too few benign dialogues to split for calibration")
+    if not calib:
+        raise RuntimeError(f"no guard scores for guard {guard_name!r} on the calibration prompts; "
+                           "run the guard stage with this config first")
     n_min = min(len(r) for r in calib + over) if calib or over else 0
     qs = [q for q in budgets if q <= n_min] if n_min else budgets
     thresholds: dict[str, dict[int, float] | None] = {"none": None}
