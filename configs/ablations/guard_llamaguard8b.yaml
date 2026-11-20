@@ -1,0 +1,9 @@
+# Ablation: guardrail size. Llama Guard 3 8B scores the SAME pools as the 1B guard (no new generation).
+# 8B in bf16 (16 GB) does not fit a 12 GB card, so vLLM quantizes it to FP8 while loading.
+# If loading runs out of memory, use  vllm: {quantization: bitsandbytes}  (uv pip install bitsandbytes).
+extends: ../experiment2_12gb.yaml
+tag: guard8b
+guard:
+  name: bestofq_llamaguard8b
+  model: meta-llama/Llama-Guard-3-8B          # gated: accept the licence on Hugging Face
+  vllm: {quantization: fp8, gpu_memory_utilization: 0.90}

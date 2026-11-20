@@ -1,0 +1,7 @@
+# Ablation: judge. A second judge from another model family (Mistral) labels the same samples.
+extends: ../experiment2_12gb.yaml
+tag: judge_mistral
+judge:
+  name: rubric_mistral7b_awq
+  model: TheBloke/Mistral-7B-Instruct-v0.2-AWQ
+  fold_system: true                           # Mistral's chat template has no system role

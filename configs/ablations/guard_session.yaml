@@ -1,0 +1,7 @@
+# Ablation: guardrail context. Llama Guard 3 1B reads the whole dialogue (the target's own earlier
+# replies plus the final turn) instead of the final turn only. Same pools, same candidates.
+extends: ../experiment2_12gb.yaml
+tag: session
+guard:
+  name: bestofq_llamaguard1b_session
+  context: session

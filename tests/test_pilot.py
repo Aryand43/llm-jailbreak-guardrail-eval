@@ -210,3 +210,63 @@ def test_build_language_filter(tmp_path, monkeypatch):
     assert counts["harmful"] == 6
     kept = {stages.language(it) for _, it in stages.load_items(tmp_path / "r")}
     assert kept == {"en", "bn"}
+
+
+# --------------------------------------------------------------------------- ablations
+
+
+def test_session_guard_sees_earlier_turns(run):
+    stages.generate(run, FakeBackend("t"), n=2, decoding=DECODING)
+
+    class Seen(FakeBackend):
+        def __init__(self, name):
+            super().__init__(name)
+            self.lengths = []
+
+        def next_token_probs(self, conversations, tokens):
+            self.lengths += [len(c) for c in conversations]
+            return super().next_token_probs(conversations, tokens)
+
+    final, session = Seen("g"), Seen("g")
+    stages.guard(run, final, "g_final")
+    stages.guard(run, session, "g_session", context="session")
+    assert set(final.lengths) == {2}
+    assert max(session.lengths) == 6  # three user turns: two earlier pairs + final user + candidate
+    with pytest.raises(ValueError):
+        stages.guard(run, FakeBackend("g"), "x", context="bogus")
+
+
+def test_analysis_ablations(run):
+    stages.generate(run, FakeBackend("t"), n=8, decoding=DECODING)
+    stages.guard(run, FakeBackend("g"), "guard")
+    stages.judge(run, FakeBackend("j"), "judge")
+    kw = dict(model="t", guard_name="guard", judge_name="judge", budgets=[1, 2, 4, 8], max_fprs=[0.05], n_boot=20)
+    base = stages.analyze(run, **kw)
+    perm = stages.analyze(run, **kw, permute_labels=True, tag="perm")
+    assert (run / "results_perm.json").exists()
+    for fam, c in perm["cells"]["none"].items():  # uninformative scores: the curve stays at the ceiling
+        assert all(v == pytest.approx(c["ceiling"]) for v in c["rho"].values())
+        assert c["ceiling"] == pytest.approx(base["cells"]["none"][fam]["ceiling"])
+    with pytest.raises(ValueError, match="calibration"):
+        stages.analyze(run, **kw, calibrate_on="nonsense")
+
+
+def test_judge_options(run):
+    msgs = rubric.messages("i", "r", fold_system=True)
+    assert [m["role"] for m in msgs] == ["user"] and rubric.SYSTEM in msgs[0]["content"]
+    stages.generate(run, FakeBackend("t"), n=2, decoding=DECODING)
+    rec = Recorder("j")
+    stages.judge(run, rec, "judge_folded", fold_system=True)
+    assert all(len(c) == 1 for convs, _ in rec.calls for c in convs)
+
+
+def test_config_extends(tmp_path):
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("pilot", "scripts/pilot.py")
+    pilot = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(pilot)
+    cfg = pilot.load_config(pilot.ROOT / "configs" / "ablations" / "guard_llamaguard8b.yaml")
+    assert cfg["guard"]["name"] == "bestofq_llamaguard8b" and cfg["guard"]["vllm"]["quantization"] == "fp8"
+    assert cfg["judge"]["name"] == "pilot_rubric_qwen25_7b_awq" and cfg["run_dir"] == "runs/experiment2-12gb"
+    assert "extends" not in cfg

@@ -1,0 +1,7 @@
+# Ablation: translation. The same Qwen judge reads non-English replies in their original language
+# instead of the NLLB translation. Compare the Chinese row (Qwen is strong in Chinese).
+extends: ../experiment2_12gb.yaml
+tag: judge_native
+judge:
+  name: pilot_rubric_qwen25_7b_awq_native
+  use_translation: false
