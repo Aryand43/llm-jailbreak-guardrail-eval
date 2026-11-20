@@ -293,8 +293,9 @@ GROUPINGS = {
 
 
 def results_name(group_by: str, tag: str | None = None) -> str:
-    base = "results" if group_by == "attack_family" else f"results_by_{group_by}"
-    return f"{base}_{tag}.json" if tag else f"{base}.json"
+    """Main results sit in the run directory; each ablation gets its own folder, ablations/<tag>/."""
+    base = "results.json" if group_by == "attack_family" else f"results_by_{group_by}.json"
+    return f"ablations/{tag}/{base}" if tag else base
 
 
 def _held_out_half(item_id: str) -> bool:
@@ -393,8 +394,10 @@ def analyze(run: Path, *, model: str, guard_name: str, judge_name: str, budgets:
                 "fit": {"L": est.fit.L, "A": est.fit.A, "alpha": est.fit.alpha},
                 "decomposition": {"removed": dec.removed, "reducible": dec.reducible,
                                   "irreducible": dec.irreducible, "position": dec.position}}
-    (run / results_name(group_by, tag)).write_text(json.dumps(out, indent=2))
-    _record(run, "analyze", {"model": model, "guard": guard_name, "judge": judge_name, "n_boot": n_boot,
+    dest = run / results_name(group_by, tag)
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    dest.write_text(json.dumps(out, indent=2))
+    _record(run, f"analyze:{tag}" if tag else "analyze", {"model": model, "guard": guard_name, "judge": judge_name, "n_boot": n_boot,
                              "group_by": group_by, "calibrate_on": calibrate_on,
                              "permute_labels": permute_labels, "tag": tag})
     return out

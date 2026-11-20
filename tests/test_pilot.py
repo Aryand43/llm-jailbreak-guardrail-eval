@@ -243,7 +243,9 @@ def test_analysis_ablations(run):
     kw = dict(model="t", guard_name="guard", judge_name="judge", budgets=[1, 2, 4, 8], max_fprs=[0.05], n_boot=20)
     base = stages.analyze(run, **kw)
     perm = stages.analyze(run, **kw, permute_labels=True, tag="perm")
-    assert (run / "results_perm.json").exists()
+    assert (run / "ablations" / "perm" / "results.json").exists() and (run / "results.json").exists()
+    manifest = json.loads((run / "manifest.json").read_text())["stages"]
+    assert manifest["analyze:perm"]["permute_labels"] and not manifest["analyze"]["permute_labels"]
     for fam, c in perm["cells"]["none"].items():  # uninformative scores: the curve stays at the ceiling
         assert all(v == pytest.approx(c["ceiling"]) for v in c["rho"].values())
         assert c["ceiling"] == pytest.approx(base["cells"]["none"][fam]["ceiling"])
