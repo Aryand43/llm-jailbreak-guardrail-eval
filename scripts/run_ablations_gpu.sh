@@ -30,16 +30,16 @@ has_access() {  # gated Hugging Face repos (Llama Guard) need an approved licenc
 }
 pilot() { uv run python scripts/pilot.py "$@"; }
 
-# 1. Guardrail size: Llama Guard 3 8B (FP8). If FP8 loading runs out of memory, fall back to 4-bit.
-echo; echo "=================== guard 8B (fp8)"
+# 1. Guardrail size: Llama Guard 3 8B. On a 12 GB card the FP8 version leaves room for only one or
+#    two requests at a time (~15 h for 46k responses), so the pre-quantized 4-bit AWQ copy is the
+#    default (~25x faster). Set GUARD8B=fp8 to use FP8 instead.
 if ! has_access meta-llama/Llama-Guard-3-8B; then
   echo "--- no access to meta-llama/Llama-Guard-3-8B: request it at https://huggingface.co/meta-llama/Llama-Guard-3-8B" >&2
-  echo "--- skipping the guard-size ablation; re-run this script once access is approved" >&2
   FAILED+=("guard 8B (no Hugging Face access)")
-elif pilot guard --config configs/ablations/guard_llamaguard8b.yaml; then
-  step "analyze guard 8B" pilot analyze --config configs/ablations/guard_llamaguard8b.yaml
+elif [ "${GUARD8B:-awq}" = "fp8" ]; then
+  step "guard 8B (fp8)" pilot guard --config configs/ablations/guard_llamaguard8b.yaml \
+    && step "analyze guard 8B (fp8)" pilot analyze --config configs/ablations/guard_llamaguard8b.yaml
 else
-  echo "--- FP8 failed (usually out of memory); retrying with the pre-quantized 4-bit AWQ copy"
   step "guard 8B (4-bit AWQ)" pilot guard --config configs/ablations/guard_llamaguard8b_awq.yaml \
     && step "analyze guard 8B (4-bit AWQ)" pilot analyze --config configs/ablations/guard_llamaguard8b_awq.yaml
 fi
