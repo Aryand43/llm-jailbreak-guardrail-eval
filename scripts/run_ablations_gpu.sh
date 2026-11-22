@@ -60,6 +60,12 @@ step "judge native" pilot judge --config configs/ablations/judge_native.yaml \
 # 5-6. Analysis only (no model): permuted labels, thresholds calibrated on benign dialogues.
 step "permuted labels" pilot analyze --config "$BASE" --permute-labels --tag permuted
 step "dialogue calibration" pilot analyze --config "$BASE" --calibrate-on dialogues --tag dialogue_calib
+# Same, for the 8B and session guards: their single-turn thresholds refuse 25% and 92% of benign
+# dialogues, so their multi-turn floors are only comparable at a matched dialogue false-positive rate.
+step "dialogue calibration 8B" pilot analyze --config configs/ablations/guard_llamaguard8b_awq.yaml \
+  --calibrate-on dialogues --tag guard8b_awq_dialogue_calib
+step "dialogue calibration session" pilot analyze --config configs/ablations/guard_session.yaml \
+  --calibrate-on dialogues --tag session_dialogue_calib
 
 # Save and push the aggregate results (no response text is in these files).
 mkdir -p results/experiment2-12gb
