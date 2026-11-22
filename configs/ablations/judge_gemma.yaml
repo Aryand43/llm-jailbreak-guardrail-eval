@@ -7,3 +7,4 @@ judge:
   model: hugging-quants/gemma-2-9b-it-AWQ-INT4
   fold_system: true          # Gemma's chat template has no system role
   max_tokens: 96             # room for a short preamble before the three ratings
+  vllm: {max_model_len: 4096}  # 6144 leaves too little KV cache next to 9B weights on 12 GB (vLLM: max ~4992)
