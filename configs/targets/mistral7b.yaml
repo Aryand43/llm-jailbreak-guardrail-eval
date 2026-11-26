@@ -1,0 +1,5 @@
+# Second target model: Mistral 7B Instruct v0.3 (4-bit AWQ). Same items, guard, judge and thresholds
+# as the main run; it shares runs/experiment2-12gb because every file is keyed by model name.
+extends: ../experiment2_12gb.yaml
+tag: target_mistral7b
+target: solidrust/Mistral-7B-Instruct-v0.3-AWQ

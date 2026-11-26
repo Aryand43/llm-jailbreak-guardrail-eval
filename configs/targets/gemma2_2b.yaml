@@ -1,0 +1,6 @@
+# Fourth target model: Gemma 2 2B Instruct (bf16, small and from a third family). Gemma 2 9B does not
+# fit as a target on 12 GB: next to its weights the KV cache holds ~5k tokens, too few to sample 64
+# replies per prompt. Needs the Gemma licence accepted at https://huggingface.co/google/gemma-2-2b-it
+extends: ../experiment2_12gb.yaml
+tag: target_gemma2_2b
+target: google/gemma-2-2b-it

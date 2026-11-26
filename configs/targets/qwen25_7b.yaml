@@ -1,0 +1,5 @@
+# Third target model: Qwen 2.5 7B Instruct (4-bit AWQ). Note: the main judge is the same model, so
+# report this target's floor with the Gemma judge as well (self-grading check).
+extends: ../experiment2_12gb.yaml
+tag: target_qwen25_7b
+target: Qwen/Qwen2.5-7B-Instruct-AWQ
