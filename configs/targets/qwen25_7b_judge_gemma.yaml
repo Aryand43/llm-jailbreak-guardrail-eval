@@ -1,0 +1,10 @@
+# Self-grading check: the Qwen 2.5 7B target is judged by Gemma 2 9B instead of Qwen 2.5 7B itself.
+# Reuses the Qwen target's samples and guard scores; only the judge runs.
+extends: qwen25_7b.yaml
+tag: target_qwen25_7b_judge_gemma
+judge:
+  name: rubric_gemma2_9b_awq
+  model: hugging-quants/gemma-2-9b-it-AWQ-INT4
+  fold_system: true
+  max_tokens: 96
+  vllm: {max_model_len: 4096}
