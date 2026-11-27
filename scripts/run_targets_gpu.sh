@@ -31,11 +31,18 @@ pilot() { uv run python scripts/pilot.py "$@"; }
 
 for t in $TARGETS; do
   cfg=configs/targets/$t.yaml
-  model=$(uv run python -c "import yaml,sys; print(yaml.safe_load(open(sys.argv[1]))['target'])" "$cfg")
-  if ! uv run python -c "from huggingface_hub import auth_check; auth_check('$model')" >/dev/null 2>&1; then
-    echo "--- no access to $model: accept its licence at https://huggingface.co/$model" >&2
-    FAILED+=("$t (no Hugging Face access)"); continue
-  fi
+  # Follow `extends:` so derived configs (e.g. a different judge) resolve their target and judge.
+  models=$(uv run python -c "
+import sys; sys.path.insert(0, 'scripts'); from pathlib import Path; from pilot import load_config
+c = load_config(Path(sys.argv[1])); print(c['target'], c['judge']['model'])" "$cfg") \
+    || { echo "--- could not read $cfg" >&2; FAILED+=("$t (bad config)"); continue; }
+  ok=1
+  for m in $models; do
+    if ! uv run python -c "from huggingface_hub import auth_check; auth_check('$m')" >/dev/null 2>&1; then
+      echo "--- no access to $m: accept its licence at https://huggingface.co/$m" >&2; ok=0
+    fi
+  done
+  [ $ok = 1 ] || { FAILED+=("$t (no Hugging Face access)"); continue; }
   step "$t generate" pilot generate --config "$cfg" \
     && step "$t guard" pilot guard --config "$cfg" \
     && step "$t translate" pilot translate --config "$cfg" \
